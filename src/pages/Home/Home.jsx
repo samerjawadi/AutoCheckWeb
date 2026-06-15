@@ -3,12 +3,10 @@ import { Link } from "react-router-dom";
 import { TbCar, TbTool, TbBuildingStore } from "react-icons/tb";
 import { HiUsers, HiArrowRight, HiClock, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
 import { db } from "../../services/localDB";
+import { calcTotal, calcPaid } from "../../utils/finance";
 import { useLanguage } from "../../context/LanguageContext";
 
 const fmt = (n) => n.toLocaleString("fr-TN", { style: "currency", currency: "TND" });
-
-const calcTotal   = (lines)    => (lines ?? []).reduce((s, l) => s + (parseFloat(l.price) || 0), 0);
-const calcPaid    = (payments) => (payments ?? []).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
 
 const STATUS_STYLE = {
   Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",

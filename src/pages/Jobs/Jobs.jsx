@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { HiPlus, HiPencil, HiTrash, HiEye, HiCash } from "react-icons/hi";
 import { db } from "../../services/localDB";
+import { calcTotal, calcPaid, calcBalance, payLabel } from "../../utils/finance";
 import Modal from "../../components/Modal";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -30,23 +31,10 @@ const inputCls =
   "w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm";
 const labelCls = "block text-xs font-medium text-neutral-400 mb-1";
 
-const calcTotal   = (lines)    => (lines ?? []).reduce((sum, l) => sum + (parseFloat(l.price) || 0), 0);
-const calcPaid    = (payments) => (payments ?? []).reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-const calcBalance = (lines, payments) => calcTotal(lines) - calcPaid(payments);
-
 const PAY_STYLE = {
   Paid:    "bg-green-500/10 text-green-400 border border-green-500/30",
   Partial: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
   Unpaid:  "bg-red-500/10 text-red-400 border border-red-500/30",
-};
-
-const payLabel = (lines, payments) => {
-  const total = calcTotal(lines);
-  const paid  = calcPaid(payments);
-  if (total === 0)    return "Paid";
-  if (paid <= 0)      return "Unpaid";
-  if (paid >= total)  return "Paid";
-  return "Partial";
 };
 
 const fmt = (n) =>
@@ -141,6 +129,11 @@ export default function Jobs() {
 
   const handlePaySubmit = async (e) => {
     e.preventDefault();
+    const amount = parseFloat(payForm.amount);
+    if (isNaN(amount) || amount <= 0) {
+      alert(t("pay_amount") + ": must be greater than 0");
+      return;
+    }
     const job = await db.jobs.getById(payJobId);
     const existing = job.payments ?? [];
     const payments = payEditId
@@ -182,6 +175,10 @@ export default function Jobs() {
   /* ── submit / delete ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.dateOut && form.dateIn && form.dateOut < form.dateIn) {
+      alert(t("jobs_date_in") + " / " + t("jobs_date_out") + ": date out cannot be before date in");
+      return;
+    }
     const payload = { ...form, lines: form.lines.filter((l) => l.description.trim()) };
     if (modal === "add") await db.jobs.add(payload);
     else await db.jobs.update(editId, payload);
@@ -661,9 +658,11 @@ export default function Jobs() {
       {/* Delete modal */}
       {modal === "delete" && deleteTarget && (
         <Modal title={t("jobs_delete")} onClose={close}>
-          <p className="text-neutral-300 text-sm"
-            dangerouslySetInnerHTML={{ __html: t("jobs_delete_msg", { name: `<span class="font-semibold text-neutral-100">${customerName(deleteTarget.customerId)}</span>` }) }}
-          />
+          <p className="text-neutral-300 text-sm">
+            {t("jobs_delete_msg", { name: "" }).split(customerName(deleteTarget.customerId))[0]}
+            <span className="font-semibold text-neutral-100">{customerName(deleteTarget.customerId)}</span>
+            {t("jobs_delete_msg", { name: "" }).split(customerName(deleteTarget.customerId))[1]}
+          </p>
           <div className="flex justify-end gap-3 mt-5">
             <button onClick={close}
               className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">

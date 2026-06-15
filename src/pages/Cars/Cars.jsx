@@ -194,9 +194,11 @@ export default function Cars() {
 
       {modal === "delete" && deleteTarget && (
         <Modal title={t("cars_delete")} onClose={close}>
-          <p className="text-neutral-300 text-sm"
-            dangerouslySetInnerHTML={{ __html: t("cars_delete_msg", { plate: `<span class="font-semibold font-mono text-neutral-100">${deleteTarget.plate}</span>` }) }}
-          />
+          <p className="text-neutral-300 text-sm">
+            {t("cars_delete_msg", { plate: "" }).split(deleteTarget.plate)[0]}
+            <span className="font-semibold font-mono text-neutral-100">{deleteTarget.plate}</span>
+            {t("cars_delete_msg", { plate: "" }).split(deleteTarget.plate)[1]}
+          </p>
           <div className="flex justify-end gap-3 mt-5">
             <button onClick={close} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">{t("cancel")}</button>
             <button onClick={handleDelete} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors cursor-pointer">{t("delete")}</button>
