@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { HiPlus, HiPencil, HiTrash, HiEye, HiCash } from "react-icons/hi";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { HiPlus, HiPencil, HiTrash, HiEye, HiCash, HiPrinter } from "react-icons/hi";
 import { db } from "../../services/localDB";
 import { calcTotal, calcPaid, calcBalance, payLabel } from "../../utils/finance";
 import Modal from "../../components/Modal";
@@ -42,6 +43,7 @@ const fmt = (n) =>
 
 export default function Jobs() {
   const { t } = useLanguage();
+  const [printJob, setPrintJob] = useState(null); // job to print
 
   const tStatus = (s) => {
     if (s === "Pending")     return t("status_pending");
@@ -518,6 +520,15 @@ export default function Jobs() {
                       className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title="View">
                       <HiEye className="w-4 h-4" />
                     </button>
+                    <button onClick={async () => {
+                        const customer = await db.customers.getById(job.customerId);
+                        const cars     = await db.cars.getAll();
+                        const car      = cars.find((c) => c.id === job.carId);
+                        setPrintJob({ job, customer, car });
+                      }}
+                      className="p-1.5 text-neutral-400 hover:text-yellow-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title="Fiche de réparation">
+                      <HiPrinter className="w-4 h-4" />
+                    </button>
                     <button onClick={() => openPay(job)}
                       className="p-1.5 text-neutral-400 hover:text-green-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title="Record Payment">
                       <HiCash className="w-4 h-4" />
@@ -705,6 +716,99 @@ export default function Jobs() {
           </div>
         </Modal>
       )}
+
+      {/* Print portal — renders fiche and triggers print */}
+      {printJob && createPortal(
+        <PrintFiche data={printJob} onDone={() => setPrintJob(null)} />,
+        document.body
+      )}
+    </div>
+  );
+}
+
+// ── Print Fiche component ──────────────────────────────────────────────────
+const fmtNum = (n) =>
+  Number(n || 0).toLocaleString("fr-TN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+function PrintFiche({ data, onDone }) {
+  const { job, customer, car } = data;
+  const total   = calcTotal(job.lines);
+  const paid    = calcPaid(job.payments);
+  const balance = Math.max(0, total - paid);
+  const ROWS    = 12;
+  const lines   = [...(job.lines ?? [])];
+  while (lines.length < ROWS) lines.push(null);
+
+  const advances = (job.payments ?? []).map((p) =>
+    `${p.date}${p.note ? " — " + p.note : ""}: ${fmtNum(p.amount)} DT`
+  ).join(" | ");
+
+  useEffect(() => {
+    // Brief delay to let the DOM paint, then print
+    const t = setTimeout(() => {
+      window.print();
+      // Clean up after print dialog closes
+      const after = setTimeout(onDone, 200);
+      return () => clearTimeout(after);
+    }, 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  const Body = ({ copy }) => (
+    <div className="fiche-copy">
+      <div className="fiche-header">
+        <div className="fiche-logo">
+          <div className="fiche-brand"><span className="fiche-auto">Auto</span>.<span className="fiche-check">Check</span></div>
+          <div className="fiche-addr">Rue Téboulba, Moknine, 5050</div>
+          <div className="fiche-addr">96 066 335 / 54 326 862 &nbsp;|&nbsp; MF : 1625326/A</div>
+        </div>
+        <div className="fiche-title-block">
+          <div className="fiche-title">FICHE DE RÉPARATION</div>
+          <div className="fiche-copy-label">{copy}</div>
+        </div>
+      </div>
+      <div className="fiche-client">
+        <div className="fiche-row"><span className="fiche-label">Nom du Client :</span><span className="fiche-value">{customer?.name ?? ""}</span><span className="fiche-label">Tél :</span><span className="fiche-value">{customer?.phone ?? ""}</span></div>
+        <div className="fiche-row"><span className="fiche-label">Voiture :</span><span className="fiche-value">{car ? `${car.manufacturer} ${car.model} — ${car.plate}` : ""}</span><span className="fiche-label">VIN :</span><span className="fiche-value">{car?.vin ?? ""}</span></div>
+        <div className="fiche-row"><span className="fiche-label">Entrée le :</span><span className="fiche-value">{job.dateIn ?? ""}</span><span className="fiche-label">Promis le :</span><span className="fiche-value">{job.dateOut ?? ""}</span></div>
+        {job.notes && <div className="fiche-row"><span className="fiche-label">Observations :</span><span className="fiche-value fiche-obs">{job.notes}</span></div>}
+      </div>
+      <table className="fiche-table">
+        <thead><tr><th style={{ width: "55%" }}>Description des travaux</th><th style={{ width: "15%" }}>Date</th><th style={{ width: "15%" }}>Prix (DT)</th><th style={{ width: "15%" }}>Qté</th></tr></thead>
+        <tbody>{lines.map((line, i) => (
+          <tr key={i}>
+            <td className="fiche-td-desc">{line?.description ?? ""}</td>
+            <td>{line ? (job.dateIn ?? "") : ""}</td>
+            <td className="fiche-td-right">{line ? fmtNum(line.price) : ""}</td>
+            <td className="fiche-td-right">{line ? "1" : ""}</td>
+          </tr>
+        ))}</tbody>
+      </table>
+      <div className="fiche-totals">
+        <div className="fiche-total-row fiche-total-main"><span>Total TTC</span><span className="fiche-amount">{fmtNum(total)} DT</span></div>
+        <div className="fiche-total-row"><span>Avance{(job.payments ?? []).length > 1 ? "s" : ""}</span><span className="fiche-amount">{fmtNum(paid)} DT</span></div>
+        {advances && <div className="fiche-total-row fiche-total-detail"><span style={{ fontStyle: "italic", fontSize: "0.75em", color: "#555" }}>{advances}</span></div>}
+        <div className="fiche-total-row"><span>Payé</span><span className="fiche-amount">{fmtNum(paid)} DT</span></div>
+        <div className={`fiche-total-row ${balance > 0 ? "fiche-unpaid" : "fiche-paid"}`}><span>Reste à payer</span><span className="fiche-amount">{fmtNum(balance)} DT</span></div>
+      </div>
+      <div className="fiche-signatures">
+        <div className="fiche-sig"><div className="fiche-sig-line" /><div className="fiche-sig-label">Signature client</div></div>
+        <div className="fiche-sig"><div className="fiche-sig-line" /><div className="fiche-sig-label">Cachet &amp; Signature garage</div></div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div id="fiche" style={{ position: "fixed", left: 0, top: 0, zIndex: 9999, background: "#fff", width: "210mm" }}>
+      <style>{`
+        @media print {
+          body > *:not(#fiche) { display: none !important; }
+          #fiche { position: static !important; width: 100% !important; }
+          @page { size: A4 portrait; margin: 0; }
+        }
+      `}</style>
+      <Body copy="Original" />
+      <Body copy="Copie client" />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { HiHome, HiMenu, HiUsers } from "react-icons/hi";
-import { TbLayoutSidebarLeftCollapse, TbCar, TbTool, TbBuildingStore } from "react-icons/tb";
+import { HiHome, HiMenu, HiUsers, HiSun, HiMoon } from "react-icons/hi";
+import { TbLayoutSidebarLeftCollapse, TbCar, TbTool, TbBuildingStore, TbChartBar } from "react-icons/tb";
 import { useLanguage } from "../context/LanguageContext";
 
 const navLinks = [
@@ -10,6 +10,7 @@ const navLinks = [
   { to: "/cars",      labelKey: "nav_cars",      icon: TbCar },
   { to: "/jobs",      labelKey: "nav_jobs",      icon: TbTool },
   { to: "/suppliers", labelKey: "nav_suppliers", icon: TbBuildingStore },
+  { to: "/finance",   labelKey: "nav_finance",   icon: TbChartBar },
 ];
 
 export default function Layout() {

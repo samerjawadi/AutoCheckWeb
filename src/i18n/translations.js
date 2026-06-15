@@ -6,6 +6,7 @@ export const translations = {
     nav_cars:      "Cars",
     nav_jobs:      "Jobs",
     nav_suppliers: "Suppliers",
+    nav_finance:   "Finance",
     nav_about:     "About",
     nav_contact:   "Contact",
 
@@ -169,6 +170,7 @@ export const translations = {
     nav_cars:      "Véhicules",
     nav_jobs:      "Travaux",
     nav_suppliers: "Fournisseurs",
+    nav_finance:   "Finances",
     nav_about:     "À propos",
     nav_contact:   "Contact",
 

@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { TbCar, TbTool, TbBuildingStore } from "react-icons/tb";
 import { HiUsers, HiArrowRight, HiClock, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
 import { db } from "../../services/localDB";
-import { calcTotal, calcPaid } from "../../utils/finance";
+import { calcTotal } from "../../utils/finance";
 import { useLanguage } from "../../context/LanguageContext";
 
 const tStatus = (s, t) => {
@@ -89,10 +92,23 @@ export default function Home() {
   const pending    = scoped.filter((j) => j.status === "Pending");
   const inProgress = scoped.filter((j) => j.status === "In Progress");
   const done       = scoped.filter((j) => j.status === "Done");
-  const revenue    = done.reduce((s, j) => s + calcPaid(j.payments), 0);
-  const open       = [...pending, ...inProgress];
-  const openValue  = open.reduce((s, j) => s + Math.max(0, calcTotal(j.lines) - calcPaid(j.payments)), 0);
   const todayCount = jobs.filter((j) => j.dateIn === today).length;
+  const carsWorked = new Set(scoped.map((j) => j.carId).filter(Boolean)).size;
+
+  // Top 6 most serviced cars
+  const topCars = (() => {
+    const counts = {};
+    scoped.forEach((j) => {
+      const car = cars.find((c) => c.id === j.carId);
+      if (!car) return;
+      const key = `${car.manufacturer} ${car.model} · ${car.plate}`;
+      counts[key] = (counts[key] ?? 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([name, count]) => ({ name, count }));
+  })();
 
   const recent = [...scoped].reverse().slice(0, 5).map((j) => ({
     ...j,
@@ -131,52 +147,56 @@ export default function Home() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <StatCard icon={HiUsers}         label={t("dashboard_customers")} value={customers.length}   color="bg-violet-500/10 text-violet-400" />
         <StatCard icon={TbCar}           label={t("dashboard_cars")}      value={cars.length}        color="bg-blue-500/10 text-blue-400" />
         <StatCard icon={TbTool}          label={t("dashboard_jobs")}      value={scoped.length}      sub={period === "All" ? t("dashboard_today", { n: todayCount }) : undefined} color="bg-orange-500/10 text-orange-400" />
         <StatCard icon={TbBuildingStore} label={t("dashboard_suppliers")} value={suppliers.length}   color="bg-emerald-500/10 text-emerald-400" />
+        <StatCard icon={TbCar}           label={lang === "fr" ? "Véhicules travaillés" : "Cars Worked"} value={carsWorked} sub={period !== "All" ? DATE_PERIODS.find(d => d.key === period)?.label : undefined} color="bg-cyan-500/10 text-cyan-400" />
       </div>
 
-      {/* Job status + financials */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-        {/* Status breakdown */}
-        <div className="lg:col-span-2 bg-neutral-900 border border-neutral-800 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4">{t("dashboard_job_status")}</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="flex flex-col items-center justify-center bg-yellow-500/5 border border-yellow-500/20 rounded-xl py-5 gap-1">
-              <HiExclamationCircle className="w-6 h-6 text-yellow-400 mb-1" />
-              <p className="text-3xl font-bold text-yellow-400">{pending.length}</p>
-              <p className="text-xs text-neutral-400">{t("status_pending")}</p>
-            </div>
-            <div className="flex flex-col items-center justify-center bg-blue-500/5 border border-blue-500/20 rounded-xl py-5 gap-1">
-              <HiClock className="w-6 h-6 text-blue-400 mb-1" />
-              <p className="text-3xl font-bold text-blue-400">{inProgress.length}</p>
-              <p className="text-xs text-neutral-400">{t("status_in_progress")}</p>
-            </div>
-            <div className="flex flex-col items-center justify-center bg-green-500/5 border border-green-500/20 rounded-xl py-5 gap-1">
-              <HiCheckCircle className="w-6 h-6 text-green-400 mb-1" />
-              <p className="text-3xl font-bold text-green-400">{done.length}</p>
-              <p className="text-xs text-neutral-400">{t("status_done")}</p>
-            </div>
+      {/* Job status */}
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-8">
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4">{t("dashboard_job_status")}</h2>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="flex flex-col items-center justify-center bg-yellow-500/5 border border-yellow-500/20 rounded-xl py-5 gap-1">
+            <HiExclamationCircle className="w-6 h-6 text-yellow-400 mb-1" />
+            <p className="text-3xl font-bold text-yellow-400">{pending.length}</p>
+            <p className="text-xs text-neutral-400">{t("status_pending")}</p>
           </div>
-        </div>
-
-        {/* Financials */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 flex flex-col gap-4">
-          <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest">{t("dashboard_revenue")}</h2>
-          <div className="flex flex-col gap-3">
-            <div className="bg-green-500/5 border border-green-500/20 rounded-xl px-4 py-3">
-              <p className="text-xs text-neutral-500 mb-0.5">{t("dashboard_collected")}</p>
-              <p className="text-xl font-bold font-mono text-green-400">{fmt(revenue)}</p>
-            </div>
-            <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl px-4 py-3">
-              <p className="text-xs text-neutral-500 mb-0.5">{t("dashboard_open")}</p>
-              <p className="text-xl font-bold font-mono text-orange-400">{fmt(openValue)}</p>
-            </div>
+          <div className="flex flex-col items-center justify-center bg-blue-500/5 border border-blue-500/20 rounded-xl py-5 gap-1">
+            <HiClock className="w-6 h-6 text-blue-400 mb-1" />
+            <p className="text-3xl font-bold text-blue-400">{inProgress.length}</p>
+            <p className="text-xs text-neutral-400">{t("status_in_progress")}</p>
+          </div>
+          <div className="flex flex-col items-center justify-center bg-green-500/5 border border-green-500/20 rounded-xl py-5 gap-1">
+            <HiCheckCircle className="w-6 h-6 text-green-400 mb-1" />
+            <p className="text-3xl font-bold text-green-400">{done.length}</p>
+            <p className="text-xs text-neutral-400">{t("status_done")}</p>
           </div>
         </div>
       </div>
+
+      {/* Top cars bar chart */}
+      {topCars.length > 0 && (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-8">
+          <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4">
+            {lang === "fr" ? "Véhicules les plus travaillés" : "Most Serviced Cars"}
+          </h2>
+          <ResponsiveContainer width="100%" height={topCars.length * 44 + 20}>
+            <BarChart data={topCars} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#262626" horizontal={false} />
+              <XAxis type="number" tick={{ fill: "#737373", fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <YAxis type="category" dataKey="name" width={180} tick={{ fill: "#a3a3a3", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ background: "#171717", border: "1px solid #404040", borderRadius: 8, color: "#e5e5e5", fontSize: 12 }}
+                formatter={(v) => [v, t("nav_jobs")]}
+              />
+              <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Recent jobs */}
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
