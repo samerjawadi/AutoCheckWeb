@@ -34,8 +34,8 @@ export default function Suppliers() {
   const [editId, setEditId]       = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const reload = () => setSuppliers(db.suppliers.getAll());
-  useEffect(reload, []);
+  const reload = async () => setSuppliers(await db.suppliers.getAll());
+  useEffect(() => { reload(); }, []);
 
   const openAdd    = () => { setForm(EMPTY); setModal("add"); };
   const openEdit   = (s) => { setForm({ name: s.name, type: s.type, phone: s.phone ?? "", notes: s.notes ?? "" }); setEditId(s.id); setModal("edit"); };
@@ -45,17 +45,17 @@ export default function Suppliers() {
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (modal === "add") db.suppliers.add(form);
-    else db.suppliers.update(editId, form);
-    reload();
+    if (modal === "add") await db.suppliers.add(form);
+    else await db.suppliers.update(editId, form);
+    await reload();
     close();
   };
 
-  const handleDelete = () => {
-    db.suppliers.delete(deleteTarget.id);
-    reload();
+  const handleDelete = async () => {
+    await db.suppliers.delete(deleteTarget.id);
+    await reload();
     close();
   };
 

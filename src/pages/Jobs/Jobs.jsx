@@ -73,13 +73,13 @@ export default function Jobs() {
   const [payEditId, setPayEditId]         = useState(null); // null = new, string = editing
   const [payForm, setPayForm]             = useState({ date: new Date().toISOString().slice(0,10), amount: "", note: "" });
 
-  const reload = () => {
-    setJobs(db.jobs.getAll());
-    setCustomers(db.customers.getAll());
-    setCars(db.cars.getAll());
-    setSuppliers(db.suppliers.getAll());
+  const reload = async () => {
+    setJobs(await db.jobs.getAll());
+    setCustomers(await db.customers.getAll());
+    setCars(await db.cars.getAll());
+    setSuppliers(await db.suppliers.getAll());
   };
-  useEffect(reload, []);
+  useEffect(() => { reload(); }, []);
 
   const customerName   = (id) => customers.find((c) => c.id === id)?.name ?? "Unknown";
   const supplierName   = (id) => suppliers.find((s) => s.id === id)?.name ?? "AutoCheck";
@@ -125,11 +125,11 @@ export default function Jobs() {
     setPayModal(true);
   };
 
-  const deletePayment = (job, paymentId) => {
+  const deletePayment = async (job, paymentId) => {
     const payments = (job.payments ?? []).filter((p) => p.id !== paymentId);
-    db.jobs.update(job.id, { payments });
-    reload();
-    if (viewTarget?.id === job.id) setViewTarget({ ...db.jobs.getById(job.id) });
+    await db.jobs.update(job.id, { payments });
+    await reload();
+    if (viewTarget?.id === job.id) setViewTarget(await db.jobs.getById(job.id));
   };
 
   const close = () => {
@@ -139,17 +139,17 @@ export default function Jobs() {
     setViewTarget(null);
   };
 
-  const handlePaySubmit = (e) => {
+  const handlePaySubmit = async (e) => {
     e.preventDefault();
-    const job = db.jobs.getById(payJobId);
+    const job = await db.jobs.getById(payJobId);
     const existing = job.payments ?? [];
     const payments = payEditId
       ? existing.map((p) => p.id === payEditId ? { ...p, ...payForm } : p)
       : [...existing, { id: genLineId(), ...payForm }];
-    db.jobs.update(payJobId, { payments });
-    reload();
+    await db.jobs.update(payJobId, { payments });
+    await reload();
     setPayModal(false);
-    if (viewTarget?.id === payJobId) setViewTarget({ ...db.jobs.getById(payJobId) });
+    if (viewTarget?.id === payJobId) setViewTarget(await db.jobs.getById(payJobId));
   };
 
   /* ── form helpers ── */
@@ -180,18 +180,18 @@ export default function Jobs() {
     setForm((prev) => ({ ...prev, lines: prev.lines.filter((l) => l.id !== id) }));
 
   /* ── submit / delete ── */
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const payload = { ...form, lines: form.lines.filter((l) => l.description.trim()) };
-    if (modal === "add") db.jobs.add(payload);
-    else db.jobs.update(editId, payload);
-    reload();
+    if (modal === "add") await db.jobs.add(payload);
+    else await db.jobs.update(editId, payload);
+    await reload();
     close();
   };
 
-  const handleDelete = () => {
-    db.jobs.delete(deleteTarget.id);
-    reload();
+  const handleDelete = async () => {
+    await db.jobs.delete(deleteTarget.id);
+    await reload();
     close();
   };
 

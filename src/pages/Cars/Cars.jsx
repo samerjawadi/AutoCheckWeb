@@ -21,11 +21,11 @@ export default function Cars() {
   const [editId, setEditId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const reload = () => {
-    setCars(db.cars.getAll());
-    setCustomers(db.customers.getAll());
+  const reload = async () => {
+    setCars(await db.cars.getAll());
+    setCustomers(await db.customers.getAll());
   };
-  useEffect(reload, []);
+  useEffect(() => { reload(); }, []);
 
   const customerName = (id) =>
     customers.find((c) => c.id === id)?.name ?? "Unknown";
@@ -63,17 +63,17 @@ export default function Cars() {
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (modal === "add") db.cars.add(form);
-    else db.cars.update(editId, form);
-    reload();
+    if (modal === "add") await db.cars.add(form);
+    else await db.cars.update(editId, form);
+    await reload();
     close();
   };
 
-  const handleDelete = () => {
-    db.cars.delete(deleteTarget.id);
-    reload();
+  const handleDelete = async () => {
+    await db.cars.delete(deleteTarget.id);
+    await reload();
     close();
   };
 

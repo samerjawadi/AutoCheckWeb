@@ -14,14 +14,18 @@ const labelCls = "block text-xs font-medium text-neutral-400 mb-1";
 export default function Customers() {
   const { t } = useLanguage();
   const [customers, setCustomers] = useState([]);
+  const [allCars, setAllCars]       = useState([]);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(null); // null | 'add' | 'edit' | 'delete'
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const reload = () => setCustomers(db.customers.getAll());
-  useEffect(reload, []);
+  const reload = async () => {
+    setCustomers(await db.customers.getAll());
+    setAllCars(await db.cars.getAll());
+  };
+  useEffect(() => { reload(); }, []);
 
   const openAdd = () => {
     setForm(EMPTY);
@@ -48,17 +52,17 @@ export default function Customers() {
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (modal === "add") db.customers.add(form);
-    else db.customers.update(editId, form);
-    reload();
+    if (modal === "add") await db.customers.add(form);
+    else await db.customers.update(editId, form);
+    await reload();
     close();
   };
 
-  const handleDelete = () => {
-    db.customers.delete(deleteTarget.id);
-    reload();
+  const handleDelete = async () => {
+    await db.customers.delete(deleteTarget.id);
+    await reload();
     close();
   };
 
@@ -103,7 +107,7 @@ export default function Customers() {
               </tr>
             )}
             {filtered.map((c) => {
-              const carCount = db.cars.getAll().filter((car) => car.customerId === c.id).length;
+              const carCount = allCars.filter((car) => car.customerId === c.id).length;
               return (
                 <tr key={c.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/40 transition-colors">
                   <td className="px-4 py-3 text-neutral-100 font-medium">{c.name}</td>

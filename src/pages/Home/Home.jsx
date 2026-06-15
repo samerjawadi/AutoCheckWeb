@@ -66,11 +66,14 @@ export default function Home() {
   ];
 
   useEffect(() => {
-    const jobs      = db.jobs.getAll();
-    const customers = db.customers.getAll();
-    const cars      = db.cars.getAll();
-    const suppliers = db.suppliers.getAll();
-    setData({ jobs, customers, cars, suppliers });
+    const load = async () => {
+      const jobs      = await db.jobs.getAll();
+      const customers = await db.customers.getAll();
+      const cars      = await db.cars.getAll();
+      const suppliers = await db.suppliers.getAll();
+      setData({ jobs, customers, cars, suppliers });
+    };
+    load();
   }, []);
 
   if (!data) return null;
