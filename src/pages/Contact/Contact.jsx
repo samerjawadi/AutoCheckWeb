@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function Contact() {
+  const { t } = useLanguage();
   const [form, setForm] = useState({ name: "", email: "", message: "" });
 
   const handleChange = (e) =>
@@ -17,55 +19,32 @@ export default function Contact() {
         onSubmit={handleSubmit}
         className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-8 flex flex-col gap-5"
       >
-        <h1 className="text-3xl font-bold text-violet-400">Contact</h1>
+        <h1 className="text-3xl font-bold text-violet-400">{t("contact_title")}</h1>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-neutral-400" htmlFor="name">Name</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            required
-            value={form.name}
-            onChange={handleChange}
+          <label className="text-sm text-neutral-400" htmlFor="name">{t("contact_name")}</label>
+          <input id="name" name="name" type="text" required value={form.name} onChange={handleChange}
             className="bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2.5 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-            placeholder="Your name"
-          />
+            placeholder={t("contact_name_ph")} />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-neutral-400" htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            value={form.email}
-            onChange={handleChange}
+          <label className="text-sm text-neutral-400" htmlFor="email">{t("email")}</label>
+          <input id="email" name="email" type="email" required value={form.email} onChange={handleChange}
             className="bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2.5 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-            placeholder="you@example.com"
-          />
+            placeholder={t("contact_email_ph")} />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-neutral-400" htmlFor="message">Message</label>
-          <textarea
-            id="message"
-            name="message"
-            required
-            rows={4}
-            value={form.message}
-            onChange={handleChange}
+          <label className="text-sm text-neutral-400" htmlFor="message">{t("contact_message")}</label>
+          <textarea id="message" name="message" required rows={4} value={form.message} onChange={handleChange}
             className="bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-2.5 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
-            placeholder="Your message..."
-          />
+            placeholder={t("contact_msg_ph")} />
         </div>
 
-        <button
-          type="submit"
-          className="bg-violet-600 hover:bg-violet-500 text-white font-medium py-2.5 rounded-lg transition-colors"
-        >
-          Send Message
+        <button type="submit"
+          className="bg-violet-600 hover:bg-violet-500 text-white font-medium py-2.5 rounded-lg transition-colors">
+          {t("contact_send")}
         </button>
       </form>
     </div>

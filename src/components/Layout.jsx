@@ -2,19 +2,21 @@ import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { HiHome, HiInformationCircle, HiMail, HiMenu, HiUsers } from "react-icons/hi";
 import { TbLayoutSidebarLeftCollapse, TbCar, TbTool, TbBuildingStore } from "react-icons/tb";
+import { useLanguage } from "../context/LanguageContext";
 
 const navLinks = [
-  { to: "/",          label: "Home",      icon: HiHome,             end: true },
-  { to: "/customers", label: "Customers", icon: HiUsers },
-  { to: "/cars",      label: "Cars",      icon: TbCar },
-  { to: "/jobs",      label: "Jobs",      icon: TbTool },
-  { to: "/suppliers", label: "Suppliers", icon: TbBuildingStore },
-  { to: "/about",     label: "About",     icon: HiInformationCircle },
-  { to: "/contact",   label: "Contact",   icon: HiMail },
+  { to: "/",          labelKey: "nav_home",      icon: HiHome,             end: true },
+  { to: "/customers", labelKey: "nav_customers", icon: HiUsers },
+  { to: "/cars",      labelKey: "nav_cars",      icon: TbCar },
+  { to: "/jobs",      labelKey: "nav_jobs",      icon: TbTool },
+  { to: "/suppliers", labelKey: "nav_suppliers", icon: TbBuildingStore },
+  { to: "/about",     labelKey: "nav_about",     icon: HiInformationCircle },
+  { to: "/contact",   labelKey: "nav_contact",   icon: HiMail },
 ];
 
 export default function Layout() {
   const [expanded, setExpanded] = useState(true);
+  const { lang, setLanguage, t } = useLanguage();
 
   return (
     <div className="flex min-h-screen bg-neutral-950 text-neutral-100">
@@ -49,8 +51,8 @@ export default function Layout() {
         </button>
 
         {/* Nav links */}
-        <nav className={`flex flex-col gap-1 p-2 mt-2 ${expanded ? "items-start" : "items-center"}`}>
-          {navLinks.map(({ to, label, icon: Icon, end }) => (
+        <nav className={`flex flex-col gap-1 p-2 mt-2 flex-1 ${expanded ? "items-start" : "items-center"}`}>
+          {navLinks.map(({ to, labelKey, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -71,11 +73,30 @@ export default function Layout() {
                   expanded ? "opacity-100 w-auto" : "opacity-0 w-0"
                 }`}
               >
-                {label}
+                {t(labelKey)}
               </span>
             </NavLink>
           ))}
         </nav>
+
+        {/* Language toggle */}
+        <div className={`border-t border-neutral-800 p-2 flex ${expanded ? "gap-2" : "flex-col gap-1 items-center"}`}>
+          {["en", "fr"].map((l) => (
+            <button
+              key={l}
+              onClick={() => setLanguage(l)}
+              className={`flex items-center justify-center rounded-lg text-xs font-bold uppercase transition-colors cursor-pointer ${
+                expanded ? "flex-1 py-2" : "w-10 py-2"
+              } ${
+                lang === l
+                  ? "bg-violet-600 text-white"
+                  : "text-neutral-500 hover:bg-neutral-800 hover:text-white"
+              }`}
+            >
+              {l === "en" ? "🇬🇧 EN" : "🇫🇷 FR"}
+            </button>
+          ))}
+        </div>
       </aside>
 
       {/* Page content — offset by sidebar width */}

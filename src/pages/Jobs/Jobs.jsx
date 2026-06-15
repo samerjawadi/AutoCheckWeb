@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { HiPlus, HiPencil, HiTrash, HiEye, HiCash } from "react-icons/hi";
 import { db } from "../../services/localDB";
 import Modal from "../../components/Modal";
+import { useLanguage } from "../../context/LanguageContext";
 
 const STATUS_OPTIONS = ["Pending", "In Progress", "Done"];
 
@@ -52,6 +53,7 @@ const fmt = (n) =>
   n.toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 
 export default function Jobs() {
+  const { t } = useLanguage();
   const [jobs, setJobs]           = useState([]);
   const [customers, setCustomers] = useState([]);
   const [cars, setCars]           = useState([]);
@@ -203,13 +205,13 @@ export default function Jobs() {
   const FormModal = (
     <Modal title={modal === "add" ? "New Job" : "Edit Job"} onClose={close}>
       {customers.length === 0 ? (
-        <p className="text-neutral-400 text-sm">Add a customer first before creating a job.</p>
+          <p className="text-neutral-400 text-sm">{t("jobs_no_customers")}</p>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Customer + Car */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls} htmlFor="customerId">Customer *</label>
+              <label className={labelCls} htmlFor="customerId">{t("jobs_customer")} *</label>
               <select id="customerId" name="customerId" required value={form.customerId}
                 onChange={handleField} className={inputCls}>
                 <option value="" disabled>Select customer</option>
@@ -222,7 +224,7 @@ export default function Jobs() {
                 onChange={handleField} className={inputCls}
                 disabled={!form.customerId}>
                 <option value="" disabled>
-                  {form.customerId ? "Select car" : "Pick customer first"}
+                    {form.customerId ? t("jobs_car") : t("jobs_pick_customer")}
                 </option>
                 {carsForCustomer(form.customerId).map((c) => (
                   <option key={c.id} value={c.id}>
@@ -236,17 +238,17 @@ export default function Jobs() {
           {/* Dates + Status */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className={labelCls} htmlFor="dateIn">Date In *</label>
+              <label className={labelCls} htmlFor="dateIn">{t("jobs_date_in")} *</label>
               <input id="dateIn" name="dateIn" type="date" required
                 value={form.dateIn} onChange={handleField} className={inputCls} />
             </div>
             <div>
-              <label className={labelCls} htmlFor="dateOut">Date Out</label>
+              <label className={labelCls} htmlFor="dateOut">{t("jobs_date_out")}</label>
               <input id="dateOut" name="dateOut" type="date"
                 value={form.dateOut} onChange={handleField} className={inputCls} />
             </div>
             <div>
-              <label className={labelCls} htmlFor="status">Status</label>
+              <label className={labelCls} htmlFor="status">{t("status")}</label>
               <select id="status" name="status" value={form.status}
                 onChange={handleField} className={inputCls}>
                 {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -257,20 +259,20 @@ export default function Jobs() {
           {/* Job lines */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-neutral-200">Job Lines</span>
+              <span className="text-sm font-semibold text-neutral-200">{t("jobs_lines")}</span>
               <button type="button" onClick={addLine}
                 className="flex items-center gap-1.5 text-sm text-violet-400 hover:text-violet-300 transition-colors cursor-pointer font-medium">
-                <HiPlus className="w-4 h-4" /> Add line
+                <HiPlus className="w-4 h-4" /> {t("jobs_add_line")}
               </button>
             </div>
             {form.lines.length === 0 && (
-              <p className="text-sm text-neutral-600 italic py-3 text-center border border-dashed border-neutral-700 rounded-lg">No lines yet — click "Add line".</p>
+              <p className="text-sm text-neutral-600 italic py-3 text-center border border-dashed border-neutral-700 rounded-lg">{t("jobs_no_lines")}</p>
             )}
             <div className="flex flex-col gap-3">
               {form.lines.map((line, idx) => (
                 <div key={line.id} className="bg-neutral-800/60 border border-neutral-700 rounded-xl p-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Line {idx + 1}</span>
+                    <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">{t("jobs_line_n", { n: idx + 1 })}</span>
                     <button type="button" onClick={() => removeLine(line.id)}
                       className="p-1 text-neutral-600 hover:text-red-400 transition-colors cursor-pointer rounded">
                       <HiTrash className="w-4 h-4" />
@@ -288,20 +290,20 @@ export default function Jobs() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
-                      <label className={labelCls}>Supplier</label>
+                      <label className={labelCls}>{t("jobs_supplier")}</label>
                       <select
                         value={line.supplierId}
                         onChange={(e) => updateLine(line.id, "supplierId", e.target.value)}
                         className={inputCls}
                       >
-                        <option value="">— None —</option>
+                        <option value="">{t("none")}</option>
                         {suppliers.map((s) => (
                           <option key={s.id} value={s.id}>{s.name} ({s.type})</option>
                         ))}
                       </select>
                     </div>
                     <div className="flex-1">
-                      <label className={labelCls}>Price (TND)</label>
+                      <label className={labelCls}>{t("jobs_price")}</label>
                       <input
                         value={line.price}
                         onChange={(e) => updateLine(line.id, "price", e.target.value)}
@@ -313,7 +315,7 @@ export default function Jobs() {
                       />
                     </div>
                     <div className="text-right shrink-0">
-                      <p className={labelCls}>Line total</p>
+                      <p className={labelCls}>{t("jobs_line_total")}</p>
                       <p className="text-neutral-100 font-mono font-semibold text-sm">{fmt(parseFloat(line.price) || 0)}</p>
                     </div>
                   </div>
@@ -329,21 +331,21 @@ export default function Jobs() {
 
           {/* Notes */}
           <div>
-            <label className={labelCls} htmlFor="notes">Notes</label>
+            <label className={labelCls} htmlFor="notes">{t("notes")}</label>
             <textarea id="notes" name="notes" rows={2}
               value={form.notes} onChange={handleField}
               className={`${inputCls} resize-none`}
-              placeholder="Internal notes..." />
+              placeholder={t("notes")} />
           </div>
 
           <div className="flex justify-end gap-3 pt-1">
             <button type="button" onClick={close}
               className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">
-              Cancel
+              {t("cancel")}
             </button>
             <button type="submit"
               className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm rounded-lg transition-colors cursor-pointer">
-              {modal === "add" ? "Create Job" : "Save Changes"}
+              {modal === "add" ? t("jobs_new") : t("save")}
             </button>
           </div>
         </form>
@@ -356,46 +358,46 @@ export default function Jobs() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-100">Jobs</h1>
+          <h1 className="text-2xl font-bold text-neutral-100">{t("jobs_title")}</h1>
           <p className="text-sm text-neutral-500 mt-0.5">{jobs.length} total</p>
         </div>
         <button onClick={openAdd}
           className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
-          <HiPlus className="w-4 h-4" /> New Job
+          <HiPlus className="w-4 h-4" /> {t("jobs_new")}
         </button>
       </div>
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         {/* Search */}
-        <input type="text" placeholder="Search customer, car..."
+        <input type="text" placeholder={t("jobs_search")}
           value={search} onChange={(e) => setSearch(e.target.value)}
           className={`${inputCls} max-w-xs`} />
 
         {/* Status pills */}
         <div className="flex items-center gap-1.5">
-          {["All", ...STATUS_OPTIONS].map((s) => (
-            <button key={s} onClick={() => setStatus(s)}
+          {[{ key: "All", label: t("period_all") }, ...STATUS_OPTIONS.map(s => ({ key: s, label: t(`status_${s.toLowerCase().replace(" ", "_")}`) }))].map(({ key, label }) => (
+            <button key={key} onClick={() => setStatus(key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                statusFilter === s
+                statusFilter === key
                   ? "bg-violet-600 text-white"
                   : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
               }`}>
-              {s}
+              {label}
             </button>
           ))}
         </div>
 
         {/* Date pills */}
         <div className="flex items-center gap-1.5">
-          {["All", "Today", "This Week", "Custom"].map((d) => (
-            <button key={d} onClick={() => { setDate(d); if (d !== "Custom") { setDateFrom(""); setDateTo(""); } }}
+          {[{ key: "All", label: t("period_all") }, { key: "Today", label: t("period_today") }, { key: "This Week", label: t("period_week") }, { key: "Custom", label: t("period_custom") }].map(({ key, label }) => (
+            <button key={key} onClick={() => { setDate(key); if (key !== "Custom") { setDateFrom(""); setDateTo(""); } }}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                dateFilter === d
+                dateFilter === key
                   ? "bg-orange-600 text-white"
                   : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
               }`}>
-              {d}
+              {label}
             </button>
           ))}
         </div>
@@ -405,7 +407,7 @@ export default function Jobs() {
           <div className="flex items-center gap-2">
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
               className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1.5 text-neutral-100 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer" />
-            <span className="text-neutral-600 text-xs">to</span>
+            <span className="text-neutral-600 text-xs">{t("date_from_to")}</span>
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
               className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1.5 text-neutral-100 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer" />
           </div>
@@ -413,7 +415,7 @@ export default function Jobs() {
 
         {/* Active count */}
         <span className="ml-auto text-xs text-neutral-500">
-          {filtered.length} / {jobs.length} jobs
+          {filtered.length} / {jobs.length} {t("jobs_title").toLowerCase()}
         </span>
       </div>
 
@@ -422,13 +424,13 @@ export default function Jobs() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-neutral-800 text-neutral-400 text-left">
-              <th className="px-4 py-3 font-medium">Customer</th>
-              <th className="px-4 py-3 font-medium">Car</th>
-              <th className="px-4 py-3 font-medium">Date In</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium text-right">Total</th>
-              <th className="px-4 py-3 font-medium text-right">Paid</th>
-              <th className="px-4 py-3 font-medium text-right">Balance</th>
+              <th className="px-4 py-3 font-medium">{t("jobs_customer")}</th>
+              <th className="px-4 py-3 font-medium">{t("jobs_car")}</th>
+              <th className="px-4 py-3 font-medium">{t("jobs_date_in")}</th>
+              <th className="px-4 py-3 font-medium">{t("status")}</th>
+              <th className="px-4 py-3 font-medium text-right">{t("total")}</th>
+              <th className="px-4 py-3 font-medium text-right">{t("jobs_paid")}</th>
+              <th className="px-4 py-3 font-medium text-right">{t("jobs_balance")}</th>
               <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
@@ -437,8 +439,8 @@ export default function Jobs() {
               <tr>
                 <td colSpan={8} className="px-4 py-10 text-center text-neutral-500">
                   {search || statusFilter !== "All" || dateFilter !== "All"
-                    ? "No jobs match your filters."
-                    : "No jobs yet. Create one to get started."}
+                    ? t("jobs_empty_filter")
+                    : t("jobs_empty")}
                 </td>
               </tr>
             )}
@@ -496,41 +498,41 @@ export default function Jobs() {
 
       {/* View modal */}
       {modal === "view" && viewTarget && (
-        <Modal title="Job Details" onClose={close}>
+        <Modal title={t("jobs_details")} onClose={close}>
           <div className="flex flex-col gap-4 text-sm">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className={labelCls}>Customer</p>
+                <p className={labelCls}>{t("jobs_customer")}</p>
                 <p className="text-neutral-100 font-medium">{customerName(viewTarget.customerId)}</p>
               </div>
               <div>
-                <p className={labelCls}>Car</p>
+                <p className={labelCls}>{t("jobs_car")}</p>
                 <p className="text-neutral-100 font-medium">{carLabel(viewTarget.carId)}</p>
               </div>
               <div>
-                <p className={labelCls}>Date In</p>
+                <p className={labelCls}>{t("jobs_date_in")}</p>
                 <p className="text-neutral-300">{viewTarget.dateIn || "—"}</p>
               </div>
               <div>
-                <p className={labelCls}>Date Out</p>
+                <p className={labelCls}>{t("jobs_date_out")}</p>
                 <p className="text-neutral-300">{viewTarget.dateOut || "—"}</p>
               </div>
             </div>
             <div>
-              <p className={labelCls}>Status</p>
+              <p className={labelCls}>{t("status")}</p>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[viewTarget.status] ?? ""}`}>
                 {viewTarget.status}
               </span>
             </div>
             {viewTarget.notes && (
               <div>
-                <p className={labelCls}>Notes</p>
+                <p className={labelCls}>{t("notes")}</p>
                 <p className="text-neutral-300">{viewTarget.notes}</p>
               </div>
             )}
             {(viewTarget.lines ?? []).length > 0 && (
               <div>
-                <p className={`${labelCls} mb-2`}>Job Lines</p>
+                <p className={`${labelCls} mb-2`}>{t("jobs_lines")}</p>
                 <div className="flex flex-col gap-1.5 bg-neutral-800/50 rounded-lg p-3">
                   {viewTarget.lines.map((l) => (
                     <div key={l.id} className="flex justify-between items-start gap-2 text-neutral-300 py-1">
@@ -552,14 +554,14 @@ export default function Jobs() {
             {/* Payments */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className={labelCls}>Payments</p>
+                <p className={labelCls}>{t("jobs_payments")}</p>
                 <button onClick={() => openPay(viewTarget)}
                   className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 transition-colors cursor-pointer">
-                  <HiPlus className="w-3.5 h-3.5" /> Record payment
+                  <HiPlus className="w-3.5 h-3.5" /> {t("jobs_record_pay")}
                 </button>
               </div>
               {(viewTarget.payments ?? []).length === 0 ? (
-                <p className="text-xs text-neutral-600 italic">No payments recorded yet.</p>
+                <p className="text-xs text-neutral-600 italic">{t("jobs_no_payments")}</p>
               ) : (
                 <div className="flex flex-col gap-1.5 bg-neutral-800/50 rounded-lg p-3">
                   {viewTarget.payments.map((p) => (
@@ -573,11 +575,11 @@ export default function Jobs() {
                   ))}
                   <div className="border-t border-neutral-700 mt-2 pt-2 space-y-1">
                     <div className="flex justify-between text-sm text-neutral-400">
-                      <span>Total paid</span>
+                      <span>{t("jobs_total_paid")}</span>
                       <span className="font-mono text-green-400 font-semibold">{fmt(calcPaid(viewTarget.payments))}</span>
                     </div>
                     <div className="flex justify-between text-sm font-bold">
-                      <span className="text-neutral-200">Balance due</span>
+                      <span className="text-neutral-200">{t("jobs_balance_due")}</span>
                       <span className={`font-mono ${
                         calcBalance(viewTarget.lines, viewTarget.payments) <= 0 ? "text-green-400" : "text-orange-400"
                       }`}>
@@ -594,34 +596,34 @@ export default function Jobs() {
 
       {/* Record Payment modal */}
       {payModal && (
-        <Modal title="Record Payment" onClose={() => setPayModal(false)}>
+        <Modal title={t("record_payment")} onClose={() => setPayModal(false)}>
           <form onSubmit={handlePaySubmit} className="flex flex-col gap-4">
             <div>
-              <label className={labelCls} htmlFor="payDate">Date *</label>
+              <label className={labelCls} htmlFor="payDate">{t("date")} *</label>
               <input id="payDate" type="date" required
                 value={payForm.date} onChange={(e) => setPayForm((p) => ({ ...p, date: e.target.value }))}
                 className={inputCls} />
             </div>
             <div>
-              <label className={labelCls} htmlFor="payAmount">Amount (TND) *</label>
+              <label className={labelCls} htmlFor="payAmount">{t("pay_amount")} *</label>
               <input id="payAmount" type="number" required min="0.001" step="0.001"
                 value={payForm.amount} onChange={(e) => setPayForm((p) => ({ ...p, amount: e.target.value }))}
                 className={inputCls} placeholder="0.000" />
             </div>
             <div>
-              <label className={labelCls} htmlFor="payNote">Note</label>
+              <label className={labelCls} htmlFor="payNote">{t("pay_note")}</label>
               <input id="payNote" type="text"
                 value={payForm.note} onChange={(e) => setPayForm((p) => ({ ...p, note: e.target.value }))}
-                className={inputCls} placeholder="e.g. Advance payment, Cash..." />
+                className={inputCls} placeholder={t("pay_note_ph")} />
             </div>
             <div className="flex justify-end gap-3 pt-1">
               <button type="button" onClick={() => setPayModal(false)}
                 className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">
-                Cancel
+                {t("cancel")}
               </button>
               <button type="submit"
                 className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg transition-colors cursor-pointer">
-                Record Payment
+                {t("record_payment")}
               </button>
             </div>
           </form>
@@ -630,20 +632,18 @@ export default function Jobs() {
 
       {/* Delete modal */}
       {modal === "delete" && deleteTarget && (
-        <Modal title="Delete Job" onClose={close}>
-          <p className="text-neutral-300 text-sm">
-            Are you sure you want to delete the job for{" "}
-            <span className="font-semibold text-neutral-100">{customerName(deleteTarget.customerId)}</span>?
-            This cannot be undone.
-          </p>
+        <Modal title={t("jobs_delete")} onClose={close}>
+          <p className="text-neutral-300 text-sm"
+            dangerouslySetInnerHTML={{ __html: t("jobs_delete_msg", { name: `<span class="font-semibold text-neutral-100">${customerName(deleteTarget.customerId)}</span>` }) }}
+          />
           <div className="flex justify-end gap-3 mt-5">
             <button onClick={close}
               className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">
-              Cancel
+              {t("cancel")}
             </button>
             <button onClick={handleDelete}
               className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors cursor-pointer">
-              Delete
+              {t("delete")}
             </button>
           </div>
         </Modal>

@@ -40,7 +40,7 @@ export const db = {
 };
 
 export function seedIfEmpty() {
-  localStorage.clear();
+  if (load(KEYS.customers).length > 0) return;
 
   // ── Suppliers (AutoCheck must be first / default) ──
   const sAC  = db.suppliers.add({ name: "AutoCheck",        type: "Internal",      phone: "",              notes: "In-house work" });
