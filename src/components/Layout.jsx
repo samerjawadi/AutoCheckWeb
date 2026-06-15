@@ -1,17 +1,15 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { HiHome, HiInformationCircle, HiMail, HiMenu, HiUsers } from "react-icons/hi";
+import { HiHome, HiMenu, HiUsers } from "react-icons/hi";
 import { TbLayoutSidebarLeftCollapse, TbCar, TbTool, TbBuildingStore } from "react-icons/tb";
 import { useLanguage } from "../context/LanguageContext";
 
 const navLinks = [
-  { to: "/",          labelKey: "nav_home",      icon: HiHome,             end: true },
+  { to: "/",          labelKey: "nav_home",      icon: HiHome,         end: true },
   { to: "/customers", labelKey: "nav_customers", icon: HiUsers },
   { to: "/cars",      labelKey: "nav_cars",      icon: TbCar },
   { to: "/jobs",      labelKey: "nav_jobs",      icon: TbTool },
   { to: "/suppliers", labelKey: "nav_suppliers", icon: TbBuildingStore },
-  { to: "/about",     labelKey: "nav_about",     icon: HiInformationCircle },
-  { to: "/contact",   labelKey: "nav_contact",   icon: HiMail },
 ];
 
 export default function Layout() {

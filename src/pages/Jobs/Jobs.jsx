@@ -70,6 +70,7 @@ export default function Jobs() {
   const [viewTarget, setViewTarget]       = useState(null);
   const [payModal, setPayModal]           = useState(false);
   const [payJobId, setPayJobId]           = useState(null);
+  const [payEditId, setPayEditId]         = useState(null); // null = new, string = editing
   const [payForm, setPayForm]             = useState({ date: new Date().toISOString().slice(0,10), amount: "", note: "" });
 
   const reload = () => {
@@ -112,8 +113,23 @@ export default function Jobs() {
   const openView   = (job) => { setViewTarget(job);   setModal("view");   };
   const openPay    = (job) => {
     setPayJobId(job.id);
+    setPayEditId(null);
     setPayForm({ date: new Date().toISOString().slice(0,10), amount: "", note: "" });
     setPayModal(true);
+  };
+
+  const openEditPay = (job, payment) => {
+    setPayJobId(job.id);
+    setPayEditId(payment.id);
+    setPayForm({ date: payment.date, amount: payment.amount, note: payment.note ?? "" });
+    setPayModal(true);
+  };
+
+  const deletePayment = (job, paymentId) => {
+    const payments = (job.payments ?? []).filter((p) => p.id !== paymentId);
+    db.jobs.update(job.id, { payments });
+    reload();
+    if (viewTarget?.id === job.id) setViewTarget({ ...db.jobs.getById(job.id) });
   };
 
   const close = () => {
@@ -126,12 +142,14 @@ export default function Jobs() {
   const handlePaySubmit = (e) => {
     e.preventDefault();
     const job = db.jobs.getById(payJobId);
-    const payments = [...(job.payments ?? []), { id: genLineId(), ...payForm }];
+    const existing = job.payments ?? [];
+    const payments = payEditId
+      ? existing.map((p) => p.id === payEditId ? { ...p, ...payForm } : p)
+      : [...existing, { id: genLineId(), ...payForm }];
     db.jobs.update(payJobId, { payments });
     reload();
     setPayModal(false);
-    // refresh viewTarget if open
-    if (viewTarget?.id === payJobId) setViewTarget({ ...job, payments });
+    if (viewTarget?.id === payJobId) setViewTarget({ ...db.jobs.getById(payJobId) });
   };
 
   /* ── form helpers ── */
@@ -565,12 +583,22 @@ export default function Jobs() {
               ) : (
                 <div className="flex flex-col gap-1.5 bg-neutral-800/50 rounded-lg p-3">
                   {viewTarget.payments.map((p) => (
-                    <div key={p.id} className="flex justify-between items-center text-sm">
-                      <div>
+                    <div key={p.id} className="flex justify-between items-center text-sm gap-2">
+                      <div className="flex-1 min-w-0">
                         <span className="text-neutral-300">{p.date}</span>
                         {p.note && <span className="text-neutral-500 ml-2 text-xs">{p.note}</span>}
                       </div>
-                      <span className="font-mono text-green-400 font-semibold">{fmt(parseFloat(p.amount) || 0)}</span>
+                      <span className="font-mono text-green-400 font-semibold shrink-0">{fmt(parseFloat(p.amount) || 0)}</span>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button onClick={() => openEditPay(viewTarget, p)}
+                          className="p-1 text-neutral-500 hover:text-violet-400 transition-colors cursor-pointer rounded">
+                          <HiPencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => deletePayment(viewTarget, p.id)}
+                          className="p-1 text-neutral-500 hover:text-red-400 transition-colors cursor-pointer rounded">
+                          <HiTrash className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                   <div className="border-t border-neutral-700 mt-2 pt-2 space-y-1">
@@ -596,7 +624,7 @@ export default function Jobs() {
 
       {/* Record Payment modal */}
       {payModal && (
-        <Modal title={t("record_payment")} onClose={() => setPayModal(false)}>
+        <Modal title={payEditId ? t("edit") + " Payment" : t("record_payment")} onClose={() => setPayModal(false)}>
           <form onSubmit={handlePaySubmit} className="flex flex-col gap-4">
             <div>
               <label className={labelCls} htmlFor="payDate">{t("date")} *</label>
@@ -623,7 +651,7 @@ export default function Jobs() {
               </button>
               <button type="submit"
                 className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg transition-colors cursor-pointer">
-                {t("record_payment")}
+                {payEditId ? t("save") : t("record_payment")}
               </button>
             </div>
           </form>
