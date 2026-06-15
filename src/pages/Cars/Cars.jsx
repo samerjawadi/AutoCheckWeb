@@ -87,7 +87,7 @@ export default function Cars() {
   );
 
   return (
-    <div className="page-enter p-6 max-w-5xl">
+    <div className="page-enter p-6 w-full">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-neutral-100">{t("cars_title")}</h1>

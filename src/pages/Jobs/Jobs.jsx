@@ -354,7 +354,7 @@ export default function Jobs() {
   );
 
   return (
-    <div className="page-enter p-6 max-w-6xl">
+    <div className="page-enter p-6 w-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

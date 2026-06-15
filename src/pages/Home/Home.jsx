@@ -96,7 +96,7 @@ export default function Home() {
   }));
 
   return (
-    <div className="page-enter p-6 max-w-6xl">
+    <div className="page-enter p-6 w-full">
       {/* Header + period filter */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
