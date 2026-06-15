@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
+import { TbHistory } from "react-icons/tb";
+import { Link } from "react-router-dom";
 import { db } from "../../services/localDB";
 import Modal from "../../components/Modal";
+import BrandSelect, { BrandLogo } from "../../components/BrandSelect";
 import { useLanguage } from "../../context/LanguageContext";
 
 const EMPTY = { customerId: "", vin: "", plate: "", manufacturer: "", model: "", description: "" };
@@ -125,11 +128,20 @@ export default function Cars() {
               <tr key={car.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/40 transition-colors">
                 <td className="px-4 py-3 text-neutral-100 font-medium font-mono">{car.plate}</td>
                 <td className="px-4 py-3 text-neutral-400 font-mono text-xs">{car.vin || "—"}</td>
-                <td className="px-4 py-3 text-neutral-300">{car.manufacturer}</td>
+                <td className="px-4 py-3 text-neutral-300">
+                  <div className="flex items-center gap-2">
+                    <BrandLogo manufacturer={car.manufacturer} size={22} />
+                    <span>{car.manufacturer}</span>
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-neutral-300">{car.model || "—"}</td>
                 <td className="px-4 py-3 text-neutral-400">{customerName(car.customerId)}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 justify-end">
+                    <Link to={`/history/car/${car.id}`}
+                      className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors" title="View history">
+                      <TbHistory className="w-4 h-4" />
+                    </Link>
                     <button onClick={() => openEdit(car)} className="p-1.5 text-neutral-400 hover:text-violet-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("edit")}>
                       <HiPencil className="w-4 h-4" />
                     </button>
@@ -169,8 +181,12 @@ export default function Cars() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelCls} htmlFor="manufacturer">{t("cars_constructor")} *</label>
-                  <input id="manufacturer" name="manufacturer" required value={form.manufacturer} onChange={handleChange} className={inputCls} placeholder="e.g. Toyota, BMW" />
+                  <label className={labelCls}>{t("cars_constructor")} *</label>
+                  <BrandSelect
+                    value={form.manufacturer}
+                    onChange={(val) => setForm((p) => ({ ...p, manufacturer: val }))}
+                    placeholder="Toyota, BMW..."
+                  />
                 </div>
                 <div>
                   <label className={labelCls} htmlFor="model">{t("cars_model")} *</label>

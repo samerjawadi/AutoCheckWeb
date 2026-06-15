@@ -6,6 +6,13 @@ import { db } from "../../services/localDB";
 import { calcTotal, calcPaid } from "../../utils/finance";
 import { useLanguage } from "../../context/LanguageContext";
 
+const tStatus = (s, t) => {
+  if (s === "Pending")     return t("status_pending");
+  if (s === "In Progress") return t("status_in_progress");
+  if (s === "Done")        return t("status_done");
+  return s;
+};
+
 const fmt = (n) => n.toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 
 const STATUS_STYLE = {
@@ -199,7 +206,7 @@ export default function Home() {
                 <td className="px-5 py-3 text-neutral-400">{job.dateIn || "—"}</td>
                 <td className="px-5 py-3">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[job.status] ?? ""}`}>
-                    {job.status}
+                    {tStatus(job.status, t)}
                   </span>
                 </td>
                 <td className="px-5 py-3 text-right font-mono text-neutral-200">{fmt(calcTotal(job.lines))}</td>

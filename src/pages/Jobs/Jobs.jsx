@@ -42,12 +42,27 @@ const fmt = (n) =>
 
 export default function Jobs() {
   const { t } = useLanguage();
+
+  const tStatus = (s) => {
+    if (s === "Pending")     return t("status_pending");
+    if (s === "In Progress") return t("status_in_progress");
+    if (s === "Done")        return t("status_done");
+    return s;
+  };
+
+  const tPay = (s) => {
+    if (s === "Paid")    return t("pay_paid");
+    if (s === "Partial") return t("pay_partial");
+    if (s === "Unpaid")  return t("pay_unpaid");
+    return s;
+  };
   const [jobs, setJobs]           = useState([]);
   const [customers, setCustomers] = useState([]);
   const [cars, setCars]           = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [search, setSearch]         = useState("");
   const [statusFilter, setStatus]   = useState("All");
+  const [payFilter, setPay]         = useState("All");
   const [dateFilter, setDate]       = useState("All");
   const [dateFrom, setDateFrom]     = useState("");
   const [dateTo, setDateTo]         = useState("");
@@ -207,13 +222,14 @@ export default function Jobs() {
       carLabel(j.carId).toLowerCase().includes(q) ||
       (j.status ?? "").toLowerCase().includes(q);
     const matchStatus = statusFilter === "All" || j.status === statusFilter;
+    const matchPay    = payFilter === "All"    || payLabel(j.lines, j.payments) === payFilter;
     const matchDate =
       dateFilter === "All"       ? true :
       dateFilter === "Today"     ? j.dateIn === today :
       dateFilter === "This Week" ? j.dateIn >= weekStart && j.dateIn <= today :
       /* Custom range */
         (!dateFrom || j.dateIn >= dateFrom) && (!dateTo || j.dateIn <= dateTo);
-    return matchSearch && matchStatus && matchDate;
+    return matchSearch && matchStatus && matchPay && matchDate;
   });
 
   /* ── form modal content ── */
@@ -266,7 +282,7 @@ export default function Jobs() {
               <label className={labelCls} htmlFor="status">{t("status")}</label>
               <select id="status" name="status" value={form.status}
                 onChange={handleField} className={inputCls}>
-                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{tStatus(s)}</option>)}
               </select>
             </div>
           </div>
@@ -391,11 +407,25 @@ export default function Jobs() {
 
         {/* Status pills */}
         <div className="flex items-center gap-1.5">
-          {[{ key: "All", label: t("period_all") }, ...STATUS_OPTIONS.map(s => ({ key: s, label: t(`status_${s.toLowerCase().replace(" ", "_")}`) }))].map(({ key, label }) => (
+          {[{ key: "All", label: t("period_all") }, ...STATUS_OPTIONS.map(s => ({ key: s, label: tStatus(s) }))].map(({ key, label }) => (
             <button key={key} onClick={() => setStatus(key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                 statusFilter === key
                   ? "bg-violet-600 text-white"
+                  : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Pay pills */}
+        <div className="flex items-center gap-1.5">
+          {[{ key: "All", label: t("period_all") }, { key: "Paid", label: t("pay_paid") }, { key: "Partial", label: t("pay_partial") }, { key: "Unpaid", label: t("pay_unpaid") }].map(({ key, label }) => (
+            <button key={key} onClick={() => setPay(key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                payFilter === key
+                  ? "bg-green-600 text-white"
                   : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
               }`}>
               {label}
@@ -468,10 +498,10 @@ export default function Jobs() {
                 <td className="px-4 py-3">
                   <div className="flex flex-col gap-1">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit ${STATUS_STYLE[job.status] ?? ""}`}>
-                      {job.status}
+                      {tStatus(job.status)}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium w-fit ${PAY_STYLE[payLabel(job.lines, job.payments)]}`}>
-                      {payLabel(job.lines, job.payments)}
+                      {tPay(payLabel(job.lines, job.payments))}
                     </span>
                   </div>
                 </td>
@@ -536,7 +566,7 @@ export default function Jobs() {
             <div>
               <p className={labelCls}>{t("status")}</p>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[viewTarget.status] ?? ""}`}>
-                {viewTarget.status}
+                {tStatus(viewTarget.status)}
               </span>
             </div>
             {viewTarget.notes && (

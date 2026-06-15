@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
+import { TbHistory } from "react-icons/tb";
+import { Link } from "react-router-dom";
 import { db } from "../../services/localDB";
 import Modal from "../../components/Modal";
 import { useLanguage } from "../../context/LanguageContext";
@@ -110,6 +112,10 @@ export default function Suppliers() {
                 <td className="px-4 py-3 text-neutral-500 max-w-xs truncate">{s.notes || "—"}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 justify-end">
+                    <Link to={`/history/supplier/${s.id}`}
+                      className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors" title="View history">
+                      <TbHistory className="w-4 h-4" />
+                    </Link>
                     <button onClick={() => openEdit(s)} className="p-1.5 text-neutral-400 hover:text-violet-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("edit")}>
                       <HiPencil className="w-4 h-4" />
                     </button>
