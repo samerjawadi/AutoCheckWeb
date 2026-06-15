@@ -149,7 +149,7 @@ export default function Finance() {
 
   return (
     <PinLock>
-      <div className="page-enter p-6 w-full">
+      <div className="page-enter p-3 md:p-6 w-full">
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
           <div>

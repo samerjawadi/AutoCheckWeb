@@ -83,7 +83,7 @@ export default function CarHistory() {
   const toggleJob = (id) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
 
   return (
-    <div className="page-enter p-6 w-full">
+    <div className="page-enter p-3 md:p-6 w-full">
       {/* Back button */}
       <button onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-sm text-neutral-400 hover:text-white mb-6 transition-colors cursor-pointer">

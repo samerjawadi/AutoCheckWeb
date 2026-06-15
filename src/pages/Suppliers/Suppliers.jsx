@@ -67,7 +67,7 @@ export default function Suppliers() {
   );
 
   return (
-    <div className="page-enter p-6 w-full">
+    <div className="page-enter p-3 md:p-6 w-full">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-neutral-100">{t("suppliers_title")}</h1>
@@ -81,7 +81,7 @@ export default function Suppliers() {
       <input type="text" placeholder={t("suppliers_search")} value={search}
         onChange={(e) => setSearch(e.target.value)} className={`${inputCls} mb-4 max-w-sm`} />
 
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-neutral-800 text-neutral-400 text-left">

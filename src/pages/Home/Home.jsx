@@ -120,7 +120,7 @@ export default function Home() {
   }));
 
   return (
-    <div className="page-enter p-6 w-full">
+    <div className="page-enter p-3 md:p-6 w-full">
       {/* Header + period filter */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
@@ -147,7 +147,7 @@ export default function Home() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
         <StatCard icon={HiUsers}         label={t("dashboard_customers")} value={customers.length}   color="bg-violet-500/10 text-violet-400" />
         <StatCard icon={TbCar}           label={t("dashboard_cars")}      value={cars.length}        color="bg-blue-500/10 text-blue-400" />
         <StatCard icon={TbTool}          label={t("dashboard_jobs")}      value={scoped.length}      sub={period === "All" ? t("dashboard_today", { n: todayCount }) : undefined} color="bg-orange-500/10 text-orange-400" />

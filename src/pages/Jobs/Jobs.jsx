@@ -387,7 +387,7 @@ export default function Jobs() {
   );
 
   return (
-    <div className="page-enter p-6 w-full">
+    <div className="page-enter p-3 md:p-6 w-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -401,7 +401,7 @@ export default function Jobs() {
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4 overflow-x-auto pb-1">
         {/* Search */}
         <input type="text" placeholder={t("jobs_search")}
           value={search} onChange={(e) => setSearch(e.target.value)}
@@ -467,7 +467,7 @@ export default function Jobs() {
       </div>
 
       {/* Table */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-neutral-800 text-neutral-400 text-left">
