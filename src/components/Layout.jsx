@@ -1,0 +1,93 @@
+import { useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import { HiHome, HiInformationCircle, HiMail, HiMenu, HiUsers } from "react-icons/hi";
+import { TbLayoutSidebarLeftCollapse, TbCar, TbTool, TbBuildingStore } from "react-icons/tb";
+
+const navLinks = [
+  { to: "/",          label: "Home",      icon: HiHome,             end: true },
+  { to: "/customers", label: "Customers", icon: HiUsers },
+  { to: "/cars",      label: "Cars",      icon: TbCar },
+  { to: "/jobs",      label: "Jobs",      icon: TbTool },
+  { to: "/suppliers", label: "Suppliers", icon: TbBuildingStore },
+  { to: "/about",     label: "About",     icon: HiInformationCircle },
+  { to: "/contact",   label: "Contact",   icon: HiMail },
+];
+
+export default function Layout() {
+  const [expanded, setExpanded] = useState(true);
+
+  return (
+    <div className="flex min-h-screen bg-neutral-950 text-neutral-100">
+      {/* Sidebar */}
+      <aside
+        className={`fixed top-0 left-0 h-full z-40 bg-neutral-900 border-r border-neutral-800 flex flex-col transition-[width] duration-300 ease-in-out ${
+          expanded ? "w-56" : "w-16"
+        }`}
+      >
+        {/* Toggle button — shows brand name when expanded */}
+        <button
+          onClick={() => setExpanded((prev) => !prev)}
+          aria-label="Toggle navigation"
+          aria-expanded={expanded}
+          className={`flex items-center h-14 border-b border-neutral-800 hover:bg-neutral-800 transition-[background-color] duration-200 shrink-0 overflow-hidden cursor-pointer group ${
+            expanded ? "justify-between px-4" : "justify-center"
+          }`}
+        >
+          <span
+            className={`text-sm font-bold tracking-wide transition-all duration-300 whitespace-nowrap ${
+              expanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+            }`}
+          >
+            <span className="text-yellow-400 text-xl">Auto</span>
+            <span className="text-white text-xl">Check</span>
+          </span>
+          {expanded ? (
+            <TbLayoutSidebarLeftCollapse className="w-5 h-5 text-neutral-400 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+          ) : (
+            <HiMenu className="w-5 h-5 text-neutral-400 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+          )}
+        </button>
+
+        {/* Nav links */}
+        <nav className={`flex flex-col gap-1 p-2 mt-2 ${expanded ? "items-start" : "items-center"}`}>
+          {navLinks.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `flex items-center transition-all duration-200 overflow-hidden whitespace-nowrap w-full group/link rounded-lg text-sm font-medium ${
+                  expanded ? "gap-3 px-3" : "justify-center px-0"
+                } py-2.5 ${
+                  isActive
+                    ? "bg-violet-600 text-white shadow-[0_0_12px_rgba(124,58,237,0.4)]"
+                    : "text-neutral-300 hover:bg-neutral-800 hover:text-white hover:translate-x-0.5"
+                }`
+              }
+            >
+              <Icon className="w-5 h-5 shrink-0 transition-transform duration-200 group-hover/link:scale-110" />
+              <span
+                className={`transition-all duration-300 ${
+                  expanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+                }`}
+              >
+                {label}
+              </span>
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Page content — offset by sidebar width */}
+      <main
+        className={`flex-1 transition-[margin] duration-300 ease-in-out ${
+          expanded ? "ml-56" : "ml-16"
+        }`}
+      >
+        <div className="page-enter" key={expanded}>
+          <Outlet />
+        </div>
+      </main>
+    </div>
+  );
+}
