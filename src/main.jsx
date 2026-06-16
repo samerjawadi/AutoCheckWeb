@@ -5,6 +5,7 @@ import "./index.css";
 import { seedIfEmpty } from "./services/localDB.js";
 import { LanguageProvider } from "./context/LanguageContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
 
 seedIfEmpty().catch(console.error);
 
@@ -12,7 +13,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <LanguageProvider>
       <ThemeProvider>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </ThemeProvider>
     </LanguageProvider>
   </React.StrictMode>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { HiHome, HiMenu, HiUsers, HiSun, HiMoon, HiX } from "react-icons/hi";
+import { HiHome, HiMenu, HiUsers, HiX, HiLogout, HiShieldCheck } from "react-icons/hi";
 import { TbLayoutSidebarLeftCollapse, TbCar, TbTool, TbBuildingStore, TbChartBar } from "react-icons/tb";
 import { useLanguage } from "../context/LanguageContext";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 const navLinks = [
   { to: "/",          labelKey: "nav_home",      icon: HiHome,         end: true },
@@ -15,10 +16,11 @@ const navLinks = [
 ];
 
 export default function Layout() {
-  const [expanded, setExpanded]   = useState(true);   // desktop rail
-  const [mobileOpen, setMobile]   = useState(false);  // mobile overlay
+  const [expanded, setExpanded]   = useState(true);
+  const [mobileOpen, setMobile]   = useState(false);
   const { lang, setLanguage, t }  = useLanguage();
-  const { dark, toggle }          = useTheme(); // eslint-disable-line no-unused-vars
+  const { dark, toggle }          = useTheme();
+  const { user, profile, isAdmin, logout } = useAuth();
   const location                  = useLocation();
 
   // Close mobile menu on route change
@@ -52,10 +54,55 @@ export default function Layout() {
             </span>
           </NavLink>
         ))}
+
+        {/* Admin link — only shown to admins */}
+        {isAdmin && (
+          <NavLink to="/admin" onClick={onNav}
+            className={({ isActive }) =>
+              `flex items-center transition-all duration-200 overflow-hidden whitespace-nowrap w-full group/link rounded-lg text-sm font-medium ${
+                expanded || mobileOpen ? "gap-3 px-3" : "justify-center px-0"
+              } py-2.5 ${
+                isActive
+                  ? "bg-amber-600 text-white"
+                  : "text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
+              }`
+            }
+          >
+            <HiShieldCheck className="w-5 h-5 shrink-0" />
+            <span className={`transition-all duration-300 ${(expanded || mobileOpen) ? "opacity-100 w-auto" : "opacity-0 w-0"}`}>
+              Admin
+            </span>
+          </NavLink>
+        )}
       </nav>
 
-      {/* Theme + Language */}
+      {/* User info + Language */}
       <div className={`border-t border-neutral-800 p-2 flex flex-col gap-1`}>
+        {/* User info + logout */}
+        {user && (
+          expanded || mobileOpen ? (
+            <div className="flex items-center gap-2 px-2 py-1.5">
+              <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                {(profile?.name ?? user.email ?? "U")[0].toUpperCase()}
+              </div>
+              <span className="flex-1 text-xs text-neutral-400 truncate">
+                {profile?.name || user.email}
+              </span>
+              <button onClick={logout} title="Logout"
+                className="p-1 text-neutral-500 hover:text-red-400 transition-colors cursor-pointer shrink-0">
+                <HiLogout className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-center py-1.5">
+              <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-xs font-bold text-white">
+                {(profile?.name ?? user.email ?? "U")[0].toUpperCase()}
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Language pills */}
         <div className={`flex ${expanded || mobileOpen ? "gap-2" : "flex-col gap-1 items-center"}`}>
           {["en", "fr"].map((l) => (
             <button key={l} onClick={() => setLanguage(l)}
