@@ -92,11 +92,13 @@ export default function PinLock({ children }) {
             <p className="text-xs text-neutral-500 mt-1">{fr ? "Ce code protège l'espace Finance." : "This PIN protects the Finance area."}</p>
           </div>
           <input type="password" inputMode="numeric" maxLength={8} autoFocus
+            autoComplete="off" data-lpignore="true" data-1p-ignore
             placeholder={fr ? "Nouveau code (min. 4)" : "New PIN (min. 4)"}
             value={setupPin} onChange={(e) => { setSetupPin(e.target.value); setSetupErr(""); }}
             className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
           />
           <input type="password" inputMode="numeric" maxLength={8}
+            autoComplete="off" data-lpignore="true" data-1p-ignore
             placeholder={fr ? "Confirmer" : "Confirm PIN"}
             value={setupConfirm} onChange={(e) => { setSetupConfirm(e.target.value); setSetupErr(""); }}
             className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -112,87 +114,50 @@ export default function PinLock({ children }) {
   }
 
   if (unlocked) {
-    return (
-      <>
-        {children}
-        {/* Change PIN & Lock button injected at bottom of page via portal-like approach */}
-        <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
-          {pinMsg && (
-            <span className="text-xs text-green-400 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-lg">{pinMsg}</span>
-          )}
-          {changing ? (
-            <form onSubmit={savePin} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-3 shadow-xl w-64">
-              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">{fr ? "Changer le code" : "Change PIN"}</p>
-              <input type="password" inputMode="numeric" maxLength={8} placeholder={fr ? "Nouveau code" : "New PIN"}
-                value={newPin} onChange={(e) => setNewPin(e.target.value)}
-                className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 tracking-widest"
-              />
-              <input type="password" inputMode="numeric" maxLength={8} placeholder={fr ? "Confirmer" : "Confirm"}
-                value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)}
-                className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 tracking-widest"
-              />
-              {pinMsg && <p className="text-xs text-red-400">{pinMsg}</p>}
-              <div className="flex gap-2">
-                <button type="button" onClick={() => { setChanging(false); setPinMsg(""); }}
-                  className="flex-1 py-2 text-xs text-neutral-400 hover:text-white bg-neutral-800 rounded-lg transition-colors cursor-pointer">
-                  {fr ? "Annuler" : "Cancel"}
-                </button>
-                <button type="submit"
-                  className="flex-1 py-2 text-xs text-white bg-violet-600 hover:bg-violet-500 rounded-lg transition-colors cursor-pointer">
-                  {fr ? "Enregistrer" : "Save"}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="flex gap-2">
-              <button onClick={() => setChanging(true)}
-                className="text-xs text-neutral-500 hover:text-white bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
-                {fr ? "Changer le code" : "Change PIN"}
-              </button>
-              <button onClick={() => { revokeSession(); setUnlocked(false); setInput(""); }}
-                className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
-                <HiLockClosed className="w-3.5 h-3.5" /> {fr ? "Verrouiller" : "Lock"}
-              </button>
-            </div>
-          )}
-        </div>
-      </>
-    );
+    return <>{children}</>;
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-neutral-950">
+    <div className="flex items-center justify-center min-h-screen bg-neutral-950 px-4">
       <form onSubmit={unlock}
-        className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 w-full max-w-xs flex flex-col items-center gap-6 shadow-2xl">
-        <div className="p-4 bg-violet-600/10 rounded-2xl">
-          <HiLockClosed className="w-8 h-8 text-violet-400" />
-        </div>
-        <div className="text-center">
-          <h2 className="text-lg font-bold text-neutral-100">{fr ? "Zone protégée" : "Protected Area"}</h2>
-          <p className="text-xs text-neutral-500 mt-1">{fr ? "Entrez votre code PIN pour continuer" : "Enter your PIN to continue"}</p>
+        className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 w-full max-w-xs flex flex-col items-center gap-4 shadow-2xl">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-violet-600/10 rounded-xl">
+            <HiLockClosed className="w-5 h-5 text-violet-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-neutral-100">{fr ? "Zone protégée" : "Protected Area"}</h2>
+            <p className="text-xs text-neutral-500">{fr ? "Entrez votre code PIN" : "Enter your PIN"}</p>
+          </div>
         </div>
 
-        <div className="relative w-full">
+        <div className="w-full">
           <input
             type={showPin ? "text" : "password"}
             inputMode="numeric"
             maxLength={8}
             autoFocus
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore
             value={input}
             onChange={(e) => { setInput(e.target.value); setError(""); }}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-center text-xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
             placeholder="••••"
           />
+        </div>
+        <div className="flex items-center gap-2 -mt-2">
           <button type="button" onClick={() => setShowPin((s) => !s)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 cursor-pointer">
-            {showPin ? <HiEyeOff className="w-4 h-4" /> : <HiEye className="w-4 h-4" />}
+            className="flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer transition-colors">
+            {showPin ? <HiEyeOff className="w-3.5 h-3.5" /> : <HiEye className="w-3.5 h-3.5" />}
+            {showPin ? (fr ? "Masquer" : "Hide") : (fr ? "Afficher" : "Show")}
           </button>
         </div>
 
-        {error && <p className="text-sm text-red-400 -mt-2">{error}</p>}
+        {error && <p className="text-xs text-red-400 -mt-1">{error}</p>}
 
         <button type="submit"
-          className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors cursor-pointer">
+          className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer">
           {fr ? "Déverrouiller" : "Unlock"}
         </button>
       </form>

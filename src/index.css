@@ -42,7 +42,12 @@ body {
   animation: modal-in 0.2s ease both;
 }
 
-/* ── Fiche de Réparation styles ── */
+/* Hide browser native password reveal button (Edge/Chrome) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-textfield-decoration-container {
+  display: none;
+}
 html:has(#fiche) body,
 html.light:has(#fiche) body {
   background-color: #fff !important;

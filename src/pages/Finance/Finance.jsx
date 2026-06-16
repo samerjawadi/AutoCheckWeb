@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line,
@@ -8,8 +8,7 @@ import { db } from "../../services/localDB";
 import { calcTotal, calcPaid } from "../../utils/finance";
 import { useLanguage } from "../../context/LanguageContext";
 import PinLock, { revokeSession } from "../../components/PinLock";
-import { HiLockClosed } from "react-icons/hi";
-import { useNavigate } from "react-router-dom";
+import { HiLockClosed, HiKey } from "react-icons/hi";
 
 const fmt = (n) => Number(n || 0).toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 
@@ -47,6 +46,10 @@ export default function Finance() {
   const { t, lang } = useLanguage();
   const fr = lang === "fr";
   const navigate = useNavigate();
+  const [changingPin, setChangingPin] = useState(false);
+  const [newPin, setNewPin]           = useState("");
+  const [confirmPin, setConfirmPin]   = useState("");
+  const [pinMsg, setPinMsg]           = useState("");
   const [data, setData]     = useState(null);
   const [period, setPeriod] = useState("All");
 
@@ -163,8 +166,8 @@ export default function Finance() {
               {new Date().toLocaleDateString(fr ? "fr-FR" : "en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
             </p>
           </div>
-          {/* Period filter + lock */}
-          <div className="flex items-center gap-3">
+          {/* Period filter + lock + change PIN */}
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 rounded-xl p-1">
               {PERIODS.map(({ key, label }) => (
                 <button key={key} onClick={() => setPeriod(key)}
@@ -175,10 +178,44 @@ export default function Finance() {
                 </button>
               ))}
             </div>
+
+            {/* Change PIN */}
+            {changingPin ? (
+              <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-1.5">
+                <input type="password" inputMode="numeric" maxLength={8} autoFocus
+                  placeholder={fr ? "Nouveau code" : "New PIN"}
+                  value={newPin} onChange={(e) => setNewPin(e.target.value)}
+                  className="w-24 bg-neutral-800 rounded-lg px-2 py-1 text-xs text-neutral-100 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                <input type="password" inputMode="numeric" maxLength={8}
+                  placeholder={fr ? "Confirmer" : "Confirm"}
+                  value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)}
+                  className="w-24 bg-neutral-800 rounded-lg px-2 py-1 text-xs text-neutral-100 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                <button onClick={() => {
+                  if (newPin.length < 4) { setPinMsg(fr ? "Min 4 chiffres" : "Min 4 digits"); return; }
+                  if (newPin !== confirmPin) { setPinMsg(fr ? "Codes différents" : "PINs don't match"); return; }
+                  localStorage.setItem("ac_finance_pin", newPin);
+                  setChangingPin(false); setNewPin(""); setConfirmPin("");
+                  setPinMsg(fr ? "✅ Code modifié" : "✅ PIN changed");
+                  setTimeout(() => setPinMsg(""), 3000);
+                }} className="text-xs text-green-400 hover:text-green-300 cursor-pointer transition-colors">
+                  {fr ? "OK" : "Save"}
+                </button>
+                <button onClick={() => { setChangingPin(false); setNewPin(""); setConfirmPin(""); setPinMsg(""); }}
+                  className="text-xs text-neutral-500 hover:text-white cursor-pointer transition-colors">✕</button>
+                {pinMsg && <span className="text-xs text-red-400">{pinMsg}</span>}
+              </div>
+            ) : (
+              <button onClick={() => setChangingPin(true)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl text-xs transition-colors cursor-pointer">
+                <HiKey className="w-4 h-4" />
+                {pinMsg || (fr ? "Code PIN" : "Change PIN")}
+              </button>
+            )}
+
+            {/* Lock */}
             <button
               onClick={() => { revokeSession(); navigate("/"); }}
               className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900 border border-neutral-800 hover:border-red-500/50 hover:bg-red-500/5 text-neutral-400 hover:text-red-400 rounded-xl text-xs font-medium transition-colors cursor-pointer"
-              title={fr ? "Verrouiller" : "Lock"}
             >
               <HiLockClosed className="w-4 h-4" />
               {fr ? "Verrouiller" : "Lock"}
