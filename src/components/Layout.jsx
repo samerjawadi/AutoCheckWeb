@@ -18,7 +18,7 @@ export default function Layout() {
   const [expanded, setExpanded]   = useState(true);   // desktop rail
   const [mobileOpen, setMobile]   = useState(false);  // mobile overlay
   const { lang, setLanguage, t }  = useLanguage();
-  const { dark, toggle }          = useTheme();
+  const { dark, toggle }          = useTheme(); // eslint-disable-line no-unused-vars
   const location                  = useLocation();
 
   // Close mobile menu on route change
@@ -56,13 +56,6 @@ export default function Layout() {
 
       {/* Theme + Language */}
       <div className={`border-t border-neutral-800 p-2 flex flex-col gap-1`}>
-        <button onClick={toggle}
-          className={`flex items-center gap-2 rounded-lg text-xs font-medium py-2 transition-colors cursor-pointer text-neutral-400 hover:bg-neutral-800 hover:text-white ${expanded || mobileOpen ? "px-3 justify-start" : "justify-center"}`}>
-          {dark ? <HiSun className="w-4 h-4 shrink-0" /> : <HiMoon className="w-4 h-4 shrink-0" />}
-          <span className={`transition-all duration-300 ${(expanded || mobileOpen) ? "opacity-100 w-auto" : "opacity-0 w-0 overflow-hidden"}`}>
-            {dark ? "Light mode" : "Dark mode"}
-          </span>
-        </button>
         <div className={`flex ${expanded || mobileOpen ? "gap-2" : "flex-col gap-1 items-center"}`}>
           {["en", "fr"].map((l) => (
             <button key={l} onClick={() => setLanguage(l)}
@@ -78,7 +71,7 @@ export default function Layout() {
   );
 
   return (
-    <div className="flex min-h-screen bg-neutral-950 text-neutral-100">
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-neutral-950 text-neutral-100">
 
       {/* ── Mobile top bar ─────────────────────────────────────── */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-neutral-900 border-b border-neutral-800 flex items-center px-4 gap-3">
@@ -120,7 +113,7 @@ export default function Layout() {
       </aside>
 
       {/* ── Page content ────────────────────────────────────────── */}
-      <main className={`flex-1 transition-[margin] duration-300 ease-in-out pt-14 md:pt-0 ${expanded ? "md:ml-56" : "md:ml-16"}`}>
+      <main className={`flex-1 min-w-0 overflow-x-hidden transition-[margin] duration-300 ease-in-out pt-14 md:pt-0 ${expanded ? "md:ml-56" : "md:ml-16"}`}>
         <div className="page-enter" key={location.pathname}>
           <Outlet />
         </div>
