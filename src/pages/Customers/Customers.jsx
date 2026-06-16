@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
-import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
+import { HiPlus, HiPencil, HiTrash, HiPhone } from "react-icons/hi";
 import { TbHistory } from "react-icons/tb";
 import { Link } from "react-router-dom";
 import { db } from "../../services/localDB";
 import Modal from "../../components/Modal";
 import { useLanguage } from "../../context/LanguageContext";
 
-const EMPTY = { name: "", phone: "", email: "" };
+const EMPTY = { name: "", phones: [""], email: "" };
+
+// phones stored as "num1 / num2" string in DB
+const phonesToStr = (phones) => phones.filter(Boolean).join(" / ");
+const strToPhones = (str) => str ? str.split(" / ").map(s => s.trim()).filter(Boolean) : [""];
 
 const inputCls =
   "w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm";
@@ -35,7 +39,7 @@ export default function Customers() {
   };
 
   const openEdit = (c) => {
-    setForm({ name: c.name, phone: c.phone, email: c.email ?? "" });
+    setForm({ name: c.name, phones: strToPhones(c.phone), email: c.email ?? "" });
     setEditId(c.id);
     setModal("edit");
   };
@@ -54,10 +58,18 @@ export default function Customers() {
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
+  const setPhone = (idx, val) =>
+    setForm((prev) => ({ ...prev, phones: prev.phones.map((p, i) => i === idx ? val : p) }));
+  const addPhone = () =>
+    setForm((prev) => ({ ...prev, phones: [...prev.phones, ""] }));
+  const removePhone = (idx) =>
+    setForm((prev) => ({ ...prev, phones: prev.phones.filter((_, i) => i !== idx) }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (modal === "add") await db.customers.add(form);
-    else await db.customers.update(editId, form);
+    const payload = { ...form, phone: phonesToStr(form.phones) };
+    if (modal === "add") await db.customers.add(payload);
+    else await db.customers.update(editId, payload);
     await reload();
     close();
   };
@@ -113,7 +125,15 @@ export default function Customers() {
               return (
                 <tr key={c.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/40 transition-colors">
                   <td className="px-4 py-3 text-neutral-100 font-medium">{c.name}</td>
-                  <td className="px-4 py-3 text-neutral-300">{c.phone}</td>
+                  <td className="px-4 py-3 text-neutral-300">
+                    <div className="flex flex-wrap gap-1">
+                      {strToPhones(c.phone).map((p, i) => (
+                        <span key={i} className="flex items-center gap-1 text-xs bg-neutral-800 px-2 py-0.5 rounded-full">
+                          <HiPhone className="w-3 h-3 text-neutral-500" />{p}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-neutral-400">{c.email || "—"}</td>
                   <td className="px-4 py-3 text-center">
                     <span className="inline-block bg-neutral-800 text-neutral-300 text-xs px-2 py-0.5 rounded-full">{carCount}</span>
@@ -147,8 +167,32 @@ export default function Customers() {
               <input id="name" name="name" required value={form.name} onChange={handleChange} className={inputCls} placeholder={t("name")} />
             </div>
             <div>
-              <label className={labelCls} htmlFor="phone">{t("phone")} *</label>
-              <input id="phone" name="phone" required value={form.phone} onChange={handleChange} className={inputCls} placeholder="+216 XX XXX XXX" />
+              <div className="flex items-center justify-between mb-1">
+                <label className={labelCls}>{t("phone")} *</label>
+                <button type="button" onClick={addPhone}
+                  className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors cursor-pointer">
+                  <HiPlus className="w-3.5 h-3.5" /> Add number
+                </button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {form.phones.map((p, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      required={idx === 0}
+                      value={p}
+                      onChange={(e) => setPhone(idx, e.target.value)}
+                      className={inputCls}
+                      placeholder="+216 XX XXX XXX"
+                    />
+                    {form.phones.length > 1 && (
+                      <button type="button" onClick={() => removePhone(idx)}
+                        className="p-1.5 text-neutral-500 hover:text-red-400 transition-colors cursor-pointer shrink-0">
+                        <HiTrash className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
             <div>
               <label className={labelCls} htmlFor="email">{t("email")}</label>
