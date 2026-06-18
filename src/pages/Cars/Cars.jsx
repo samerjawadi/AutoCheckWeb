@@ -3,6 +3,7 @@ import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import { TbHistory } from "react-icons/tb";
 import { Link } from "react-router-dom";
 import { db } from "../../services/localDB";
+import LoadingState from "../../components/LoadingState";
 import Modal from "../../components/Modal";
 import BrandSelect, { BrandLogo } from "../../components/BrandSelect";
 import { useLanguage } from "../../context/LanguageContext";
@@ -20,13 +21,19 @@ export default function Cars() {
   const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const reload = async () => {
-    setCars(await db.cars.getAll());
-    setCustomers(await db.customers.getAll());
+    setLoading(true);
+    try {
+      setCars(await db.cars.getAll());
+      setCustomers(await db.customers.getAll());
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => { reload(); }, []);
 
@@ -88,6 +95,14 @@ export default function Cars() {
       (car.model ?? "").toLowerCase().includes(search.toLowerCase()) ||
       customerName(car.customerId).toLowerCase().includes(search.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="page-enter p-3 md:p-6 w-full">
+        <LoadingState label={t("loading")} />
+      </div>
+    );
+  }
 
   return (
     <div className="page-enter p-3 md:p-6 w-full">

@@ -3,6 +3,7 @@ import { HiPlus, HiPencil, HiTrash } from "react-icons/hi";
 import { TbHistory } from "react-icons/tb";
 import { Link } from "react-router-dom";
 import { db } from "../../services/localDB";
+import LoadingState from "../../components/LoadingState";
 import Modal from "../../components/Modal";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -15,7 +16,11 @@ const TYPE_STYLE = {
   Other:            "bg-neutral-500/10 text-neutral-400 border border-neutral-600",
 };
 
-const EMPTY = { name: "", type: "Parts Supplier", phone: "", notes: "" };
+const EMPTY = { name: "", type: "Parts Supplier", phones: [""], notes: "" };
+
+// phones stored as "num1 / num2" string in DB
+const phonesToStr = (phones) => phones.filter(Boolean).join(" / ");
+const strToPhones = (str) => str ? str.split(" / ").map(s => s.trim()).filter(Boolean) : [""];
 
 const inputCls =
   "w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm";
@@ -32,25 +37,41 @@ export default function Suppliers() {
   const [suppliers, setSuppliers] = useState([]);
   const [search, setSearch]       = useState("");
   const [modal, setModal]         = useState(null);
+  const [loading, setLoading]     = useState(true);
   const [form, setForm]           = useState(EMPTY);
   const [editId, setEditId]       = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const reload = async () => setSuppliers(await db.suppliers.getAll());
+  const reload = async () => {
+    setLoading(true);
+    try {
+      setSuppliers(await db.suppliers.getAll());
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => { reload(); }, []);
 
   const openAdd    = () => { setForm(EMPTY); setModal("add"); };
-  const openEdit   = (s) => { setForm({ name: s.name, type: s.type, phone: s.phone ?? "", notes: s.notes ?? "" }); setEditId(s.id); setModal("edit"); };
+  const openEdit   = (s) => { setForm({ name: s.name, type: s.type, phones: strToPhones(s.phone), notes: s.notes ?? "" }); setEditId(s.id); setModal("edit"); };
   const openDelete = (s) => { setDeleteTarget(s); setModal("delete"); };
   const close      = () => { setModal(null); setDeleteTarget(null); setEditId(null); };
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
+  const setPhone = (idx, val) =>
+    setForm((prev) => ({ ...prev, phones: prev.phones.map((p, i) => i === idx ? val : p) }));
+  const addPhone = () =>
+    setForm((prev) => ({ ...prev, phones: [...prev.phones, ""] }));
+  const removePhone = (idx) =>
+    setForm((prev) => ({ ...prev, phones: prev.phones.filter((_, i) => i !== idx) }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (modal === "add") await db.suppliers.add(form);
-    else await db.suppliers.update(editId, form);
+    const payload = { ...form, phone: phonesToStr(form.phones) };
+    if (modal === "add") await db.suppliers.add(payload);
+    else await db.suppliers.update(editId, payload);
     await reload();
     close();
   };
@@ -65,6 +86,14 @@ export default function Suppliers() {
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.type.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="page-enter p-3 md:p-6 w-full">
+        <LoadingState label={t("loading")} />
+      </div>
+    );
+  }
 
   return (
     <div className="page-enter p-3 md:p-6 w-full">
@@ -108,7 +137,15 @@ export default function Suppliers() {
                     {SUPPLIER_TYPES_KEYS.find(k => k.key === s.type)?.label() ?? s.type}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-neutral-400">{s.phone || "—"}</td>
+                <td className="px-4 py-3 text-neutral-300">
+                  <div className="flex flex-wrap gap-1">
+                    {strToPhones(s.phone).filter(Boolean).length === 0 ? (
+                      <span className="text-neutral-500">—</span>
+                    ) : strToPhones(s.phone).filter(Boolean).map((p, i) => (
+                      <span key={i} className="text-xs bg-neutral-800 px-2 py-0.5 rounded-full text-neutral-400">{p}</span>
+                    ))}
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-neutral-500 max-w-xs truncate">{s.notes || "—"}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 justify-end">
@@ -144,8 +181,31 @@ export default function Suppliers() {
               </select>
             </div>
             <div>
-              <label className={labelCls} htmlFor="phone">{t("phone")}</label>
-              <input id="phone" name="phone" value={form.phone} onChange={handleChange} className={inputCls} placeholder="+216 XX XXX XXX" />
+              <div className="flex items-center justify-between mb-1">
+                <label className={labelCls}>{t("phone")}</label>
+                <button type="button" onClick={addPhone}
+                  className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors cursor-pointer">
+                  <HiPlus className="w-3.5 h-3.5" /> Add number
+                </button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {form.phones.map((p, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      value={p}
+                      onChange={(e) => setPhone(idx, e.target.value)}
+                      className={inputCls}
+                      placeholder="+216 XX XXX XXX"
+                    />
+                    {form.phones.length > 1 && (
+                      <button type="button" onClick={() => removePhone(idx)}
+                        className="p-1.5 text-neutral-500 hover:text-red-400 transition-colors cursor-pointer shrink-0">
+                        <HiTrash className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
             <div>
               <label className={labelCls} htmlFor="notes">{t("notes")}</label>

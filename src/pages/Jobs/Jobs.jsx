@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { HiPlus, HiPencil, HiTrash, HiEye, HiCash, HiPrinter } from "react-icons/hi";
 import { db } from "../../services/localDB";
 import { calcTotal, calcPaid, calcBalance, payLabel } from "../../utils/finance";
+import LoadingState from "../../components/LoadingState";
 import Modal from "../../components/Modal";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -62,6 +63,7 @@ export default function Jobs() {
   const [customers, setCustomers] = useState([]);
   const [cars, setCars]           = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading]     = useState(true);
   const [search, setSearch]         = useState("");
   const [statusFilter, setStatus]   = useState("All");
   const [payFilter, setPay]         = useState("All");
@@ -79,10 +81,15 @@ export default function Jobs() {
   const [payForm, setPayForm]             = useState({ date: new Date().toISOString().slice(0,10), amount: "", note: "" });
 
   const reload = async () => {
-    setJobs(await db.jobs.getAll());
-    setCustomers(await db.customers.getAll());
-    setCars(await db.cars.getAll());
-    setSuppliers(await db.suppliers.getAll());
+    setLoading(true);
+    try {
+      setJobs(await db.jobs.getAll());
+      setCustomers(await db.customers.getAll());
+      setCars(await db.cars.getAll());
+      setSuppliers(await db.suppliers.getAll());
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => { reload(); }, []);
 
@@ -236,7 +243,7 @@ export default function Jobs() {
 
   /* ── form modal content ── */
   const FormModal = (
-    <Modal title={modal === "add" ? "New Job" : "Edit Job"} onClose={close}>
+    <Modal title={modal === "add" ? t("jobs_new") : t("jobs_edit")} onClose={close}>
       {customers.length === 0 ? (
           <p className="text-neutral-400 text-sm">{t("jobs_no_customers")}</p>
       ) : (
@@ -247,12 +254,12 @@ export default function Jobs() {
               <label className={labelCls} htmlFor="customerId">{t("jobs_customer")} *</label>
               <select id="customerId" name="customerId" required value={form.customerId}
                 onChange={handleField} className={inputCls}>
-                <option value="" disabled>Select customer</option>
+                <option value="" disabled>{t("jobs_select_customer")}</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
-              <label className={labelCls} htmlFor="carId">Car *</label>
+              <label className={labelCls} htmlFor="carId">{t("jobs_car")} *</label>
               <select id="carId" name="carId" required value={form.carId}
                 onChange={handleField} className={inputCls}
                 disabled={!form.customerId}>
@@ -312,13 +319,13 @@ export default function Jobs() {
                     </button>
                   </div>
                   <div>
-                    <label className={labelCls}>What was done</label>
+                    <label className={labelCls}>{t("jobs_what_done")}</label>
                     <textarea
                       value={line.description}
                       rows={2}
                       onChange={(e) => updateLine(line.id, "description", e.target.value)}
                       className={`${inputCls} resize-none`}
-                      placeholder="e.g. Replaced front brake pads and bled the system..."
+                      placeholder={t("jobs_what_done_ph")}
                     />
                   </div>
                   <div className="flex items-center gap-3">
@@ -385,6 +392,14 @@ export default function Jobs() {
       )}
     </Modal>
   );
+
+  if (loading) {
+    return (
+      <div className="page-enter p-3 md:p-6 w-full">
+        <LoadingState label={t("loading")} />
+      </div>
+    );
+  }
 
   return (
     <div className="page-enter p-3 md:p-6 w-full">
@@ -517,7 +532,7 @@ export default function Jobs() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 justify-end">
                     <button onClick={() => openView(job)}
-                      className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title="View">
+                      className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("view") }>
                       <HiEye className="w-4 h-4" />
                     </button>
                     <button onClick={async () => {
@@ -526,19 +541,19 @@ export default function Jobs() {
                         const car      = cars.find((c) => c.id === job.carId);
                         setPrintJob({ job, customer, car });
                       }}
-                      className="p-1.5 text-neutral-400 hover:text-yellow-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title="Fiche de réparation">
+                      className="p-1.5 text-neutral-400 hover:text-yellow-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("jobs_print_sheet")}>
                       <HiPrinter className="w-4 h-4" />
                     </button>
                     <button onClick={() => openPay(job)}
-                      className="p-1.5 text-neutral-400 hover:text-green-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title="Record Payment">
+                      className="p-1.5 text-neutral-400 hover:text-green-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("record_payment") }>
                       <HiCash className="w-4 h-4" />
                     </button>
                     <button onClick={() => openEdit(job)}
-                      className="p-1.5 text-neutral-400 hover:text-violet-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title="Edit">
+                      className="p-1.5 text-neutral-400 hover:text-violet-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("edit") }>
                       <HiPencil className="w-4 h-4" />
                     </button>
                     <button onClick={() => openDelete(job)}
-                      className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title="Delete">
+                      className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("delete") }>
                       <HiTrash className="w-4 h-4" />
                     </button>
                   </div>
@@ -662,7 +677,7 @@ export default function Jobs() {
 
       {/* Record Payment modal */}
       {payModal && (
-        <Modal title={payEditId ? t("edit") + " Payment" : t("record_payment")} onClose={() => setPayModal(false)}>
+        <Modal title={payEditId ? t("jobs_edit_payment") : t("record_payment")} onClose={() => setPayModal(false)}>
           <form onSubmit={handlePaySubmit} className="flex flex-col gap-4">
             <div>
               <label className={labelCls} htmlFor="payDate">{t("date")} *</label>

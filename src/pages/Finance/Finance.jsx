@@ -7,6 +7,7 @@ import {
 import { db } from "../../services/localDB";
 import { calcTotal, calcPaid } from "../../utils/finance";
 import { useLanguage } from "../../context/LanguageContext";
+import LoadingState from "../../components/LoadingState";
 import PinLock, { revokeSession } from "../../components/PinLock";
 import { HiLockClosed, HiKey } from "react-icons/hi";
 
@@ -50,7 +51,8 @@ export default function Finance() {
   const [newPin, setNewPin]           = useState("");
   const [confirmPin, setConfirmPin]   = useState("");
   const [pinMsg, setPinMsg]           = useState("");
-  const [data, setData]     = useState(null);
+  const [data, setData]               = useState(null);
+  const [loading, setLoading]         = useState(true);
   const [period, setPeriod] = useState("All");
 
   const PERIODS = [
@@ -62,14 +64,27 @@ export default function Finance() {
 
   useEffect(() => {
     const load = async () => {
-      const [jobs, customers, cars, suppliers] = await Promise.all([
-        db.jobs.getAll(), db.customers.getAll(),
-        db.cars.getAll(), db.suppliers.getAll(),
-      ]);
-      setData({ jobs, customers, cars, suppliers });
+      setLoading(true);
+      try {
+        const [jobs, customers, cars, suppliers] = await Promise.all([
+          db.jobs.getAll(), db.customers.getAll(),
+          db.cars.getAll(), db.suppliers.getAll(),
+        ]);
+        setData({ jobs, customers, cars, suppliers });
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="page-enter p-3 md:p-6 w-full">
+        <LoadingState label={t("loading")} />
+      </div>
+    );
+  }
 
   if (!data) return null;
   const { jobs, customers, suppliers } = data;

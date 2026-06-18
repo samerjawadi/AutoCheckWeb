@@ -16,6 +16,15 @@ const throwIfError = (error, context) => {
 
 // ── CRUD ───────────────────────────────────────────────────────────────────
 export const db = {
+  users: {
+    getAll:   async ()       => { const { data, error } = await supabase.from("users").select("*").order("name"); throwIfError(error, "users.getAll"); return data ?? []; },
+    getById:  async (id)     => { const { data, error } = await supabase.from("users").select("*").eq("id", id).maybeSingle(); throwIfError(error, "users.getById"); return data ?? null; },
+    getByEmail: async (email) => { const { data, error } = await supabase.from("users").select("*").eq("email", email).maybeSingle(); throwIfError(error, "users.getByEmail"); return data ?? null; },
+    add:      async (item)   => { const { data, error } = await supabase.from("users").insert({ name: item.name, email: item.email, password: item.password, role: item.role ?? "user" }).select().single(); throwIfError(error, "users.add"); return data; },
+    update:   async (id, p)  => { const d = {}; if (p.name !== undefined) d.name = p.name; if (p.email !== undefined) d.email = p.email; if (p.role !== undefined) d.role = p.role; const { error } = await supabase.from("users").update(d).eq("id", id); throwIfError(error, "users.update"); },
+    delete:   async (id)     => { const { error } = await supabase.from("users").delete().eq("id", id); throwIfError(error, "users.delete"); },
+  },
+
   customers: {
     getAll:   async ()       => { const { data, error } = await supabase.from("customers").select("*").order("name"); throwIfError(error, "customers.getAll"); return (data ?? []).map(toCustomer); },
     getById:  async (id)     => { const { data, error } = await supabase.from("customers").select("*").eq("id", id).maybeSingle(); throwIfError(error, "customers.getById"); return data ? toCustomer(data) : null; },
@@ -53,6 +62,26 @@ export const db = {
 export async function seedIfEmpty() {
   const { count } = await supabase.from("customers").select("*", { count: "exact", head: true });
   if (count > 0) return;
+
+  // Add default admin user
+  try {
+    const existingAdmin = await supabase.from("users").select("*").eq("email", "admin@autocheck.local").single();
+    if (!existingAdmin.data) {
+      // Simple hash of "admin123"
+      const hashedPassword = Math.abs(
+        Array.from("admin123").reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0)
+      ).toString(36);
+      
+      await supabase.from("users").insert([{
+        name: "Admin",
+        email: "admin@autocheck.local",
+        password: hashedPassword,
+        role: "admin"
+      }]);
+    }
+  } catch (e) {
+    console.warn("[Seed] Could not add default admin user:", e.message);
+  }
 
   const sAC = await db.suppliers.add({ name: "AutoCheck",         type: "Internal",       phone: "",               notes: "In-house work" });
   const sP1 = await db.suppliers.add({ name: "TunisAuto Parts",   type: "Parts Supplier", phone: "+216 71 100 200", notes: "Main parts wholesaler" });

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "../config/axios";
+import { authService } from "../services/authService";
 
 const AuthContext = createContext(null);
 
@@ -7,42 +7,40 @@ export function AuthProvider({ children }) {
   const [user, setUser]       = useState(undefined); // undefined = loading
   const [profile, setProfile] = useState(null);
 
-  const fetchProfile = async (userId) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    if (error) console.warn("[Auth] fetchProfile error:", error.message);
-    setProfile(data ?? null);
-  };
-
   useEffect(() => {
-    // Get current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) fetchProfile(session.user.id);
-        else setProfile(null);
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    // Check if there's a logged-in user in localStorage
+    const storedUserId = localStorage.getItem("userId");
+    if (storedUserId) {
+      authService.getUserById(storedUserId)
+        .then((userData) => {
+          if (userData) {
+            setUser(userData);
+            setProfile(userData);
+          } else {
+            localStorage.removeItem("userId");
+            setUser(null);
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem("userId");
+          setUser(null);
+        });
+    } else {
+      setUser(null);
+    }
   }, []);
 
-  const login = async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+  const login = async (emailOrName, password) => {
+    const user = await authService.login(emailOrName, password);
+    setUser(user);
+    setProfile(user);
+    localStorage.setItem("userId", user.id);
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    localStorage.removeItem("userId");
   };
 
   const isAdmin = profile?.role === "admin";

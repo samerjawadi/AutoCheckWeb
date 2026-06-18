@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail]       = useState("");
+  const [emailOrName, setEmailOrName] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw]     = useState(false);
   const [loading, setLoading]   = useState(false);
@@ -15,7 +15,7 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      await login(email, password);
+      await login(emailOrName, password);
     } catch (err) {
       setError(err.message ?? "Login failed");
     } finally {
@@ -44,13 +44,13 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Email */}
+        {/* Email or Name */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-neutral-400">Email</label>
+          <label className="text-xs font-medium text-neutral-400">Email or Name</label>
           <input
-            type="email" required autoFocus
-            value={email} onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            type="text" required autoFocus
+            value={emailOrName} onChange={(e) => setEmailOrName(e.target.value)}
+            placeholder="you@example.com or John Doe"
             className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
           />
         </div>

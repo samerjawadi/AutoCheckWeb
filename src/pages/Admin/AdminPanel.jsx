@@ -1,15 +1,41 @@
-import { useState } from "react";
-import { HiDownload, HiDatabase, HiCheckCircle, HiUsers } from "react-icons/hi";
+import { useEffect, useState } from "react";
+import { HiDownload, HiDatabase, HiCheckCircle, HiUsers, HiTrash, HiPencil } from "react-icons/hi";
 import { TbCar, TbTool, TbBuildingStore } from "react-icons/tb";
 import { db } from "../../services/localDB";
-import { supabase } from "../../config/axios";
+import { authService } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
+import Modal from "../../components/Modal";
 
 const fmt = (n) => Number(n || 0).toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 
 function downloadJSON(data, filename) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeSQLValue(value) {
+  if (value === null || value === undefined) return "NULL";
+  if (typeof value === "number" || typeof value === "bigint") return String(value);
+  if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
+  if (Array.isArray(value) || typeof value === "object") {
+    return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
+  }
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+function toSQLInsert(table, rows) {
+  if (!rows.length) return "";
+  const columns = Object.keys(rows[0]);
+  const values = rows.map((row) => `(${columns.map((col) => escapeSQLValue(row[col])).join(", ")})`);
+  return `\nINSERT INTO ${table} (${columns.join(", ")}) VALUES\n${values.join(",\n")};&#10;`;
+}
+
+function downloadSQL(sql, filename) {
+  const blob = new Blob([sql], { type: "application/sql;charset=utf-8;" });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement("a");
   a.href = url; a.download = filename; a.click();
@@ -34,9 +60,15 @@ export default function AdminPanel() {
   const { profile } = useAuth();
   const { t, lang } = useLanguage();
   const fr = lang === "fr";
+  const [activeTab, setActiveTab] = useState("db");
   const [status, setStatus] = useState("");
   const [users, setUsers]   = useState([]);
+  const [newUser, setNewUser] = useState({ email: "", password: "", name: "", role: "user" });
   const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
+  const [editForm, setEditForm] = useState({ name: "", email: "", password: "" });
 
   const withStatus = async (fn, msg) => {
     setLoading(true);
@@ -46,13 +78,28 @@ export default function AdminPanel() {
     finally { setLoading(false); setTimeout(() => setStatus(""), 4000); }
   };
 
+  useEffect(() => {
+    if (activeTab === "users") {
+      loadUsers();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
   const backupAll = () => withStatus(async () => {
-    const [customers, cars, jobs, suppliers] = await Promise.all([
+    const [customers, cars, jobs, suppliers, users] = await Promise.all([
       db.customers.getAll(), db.cars.getAll(), db.jobs.getAll(), db.suppliers.getAll(),
+      db.users.getAll(),
     ]);
     const date = new Date().toISOString().slice(0, 10);
-    downloadJSON({ customers, cars, jobs, suppliers, exportedAt: new Date().toISOString() }, `autocheck-backup-${date}.json`);
+    downloadJSON({ customers, cars, jobs, suppliers, users, exportedAt: new Date().toISOString() }, `autocheck-backup-${date}.json`);
   }, fr ? "✅ Sauvegarde téléchargée" : "✅ Backup downloaded");
+
+  const exportSQL = () => withStatus(async () => {
+    // SQL export disabled for now.
+  }, fr ? "✅ SQL export disabled" : "✅ SQL export disabled");
 
   const exportCustomers = () => withStatus(async () => {
     const rows = await db.customers.getAll();
@@ -77,16 +124,64 @@ export default function AdminPanel() {
   }, "✅ jobs.csv");
 
   const loadUsers = () => withStatus(async () => {
-    const { data, error } = await supabase.from("profiles").select("*");
-    if (error) throw error;
-    setUsers(data ?? []);
+    const users = await authService.getAllUsers();
+    setUsers(users);
   }, "");
 
   const changeRole = async (userId, newRole) => {
-    const { error } = await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
+    const error = await authService.updateUser(userId, { role: newRole });
     if (error) { alert(error.message); return; }
     setUsers((u) => u.map((p) => p.id === userId ? { ...p, role: newRole } : p));
   };
+
+  const openDeleteUser = (user) => {
+    setDeleteTarget(user);
+    setModal("delete");
+  };
+
+  const openEditUser = (user) => {
+    setEditTarget(user);
+    setEditForm({ name: user.name ?? "", email: user.email ?? "", password: "" });
+    setModal("edit");
+  };
+
+  const closeModal = () => {
+    setModal(null);
+    setDeleteTarget(null);
+    setEditTarget(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    await authService.deleteUser(deleteTarget.id);
+    setUsers((u) => u.filter((p) => p.id !== deleteTarget.id));
+    closeModal();
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTarget) return;
+    if (!editForm.name) {
+      throw new Error(fr ? "Le nom est requis." : "Name is required.");
+    }
+
+    const updates = { name: editForm.name.trim() };
+    if (editForm.email !== undefined) updates.email = editForm.email.trim() || null;
+    if (editForm.password) updates.password = editForm.password;
+
+    await authService.updateUser(editTarget.id, updates);
+    setUsers((u) => u.map((p) => p.id === editTarget.id ? { ...p, name: updates.name, email: updates.email ?? p.email } : p));
+    closeModal();
+  };
+
+  const addUser = () => withStatus(async () => {
+    if (!newUser.name || !newUser.password) {
+      throw new Error(fr ? "Remplissez le nom et le mot de passe." : "Fill in name and password.");
+    }
+
+    await authService.addUser(newUser.name, newUser.email, newUser.password, newUser.role);
+    setNewUser({ email: "", password: "", name: "", role: "user" });
+    await loadUsers();
+  }, fr ? "✅ Utilisateur ajouté" : "✅ User added");
 
   return (
     <div className="page-enter p-3 md:p-6 w-full">
@@ -99,85 +194,248 @@ export default function AdminPanel() {
         </p>
       </div>
 
-      {status && (
+      {status && activeTab !== "users" && (
         <div className="mb-4 text-sm bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-300">
           {status}
         </div>
       )}
 
-      {/* Backup section */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-6">
-        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <HiDatabase className="w-4 h-4" /> {fr ? "Sauvegarde" : "Backup"}
-        </h2>
-        <div className="flex flex-wrap gap-3">
-          <button onClick={backupAll} disabled={loading}
-            className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer">
-            <HiDownload className="w-4 h-4" />
-            {fr ? "Tout sauvegarder (JSON)" : "Full Backup (JSON)"}
-          </button>
+      {status && activeTab === "users" && (
+        <div className="mb-4 text-sm bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-neutral-300">
+          {status}
+        </div>
+      )}
+
+      <div className="mb-6 border-b border-neutral-800">
+        <div className="flex gap-3">
+          {[
+            { id: "db", label: fr ? "Gestion BD" : "Database" },
+            { id: "users", label: fr ? "Utilisateurs" : "Users" },
+          ].map((tab) => (
+            <button key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 rounded-t-2xl border border-b-0 ${activeTab === tab.id ? "bg-neutral-900 border-neutral-800 text-white" : "bg-neutral-950 border-neutral-900 text-neutral-500 hover:text-neutral-200"}`}>
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Export section */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-6">
-        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <HiDownload className="w-4 h-4" /> {fr ? "Exporter en CSV" : "Export as CSV"}
-        </h2>
-        <div className="flex flex-wrap gap-3">
-          <button onClick={exportCustomers} disabled={loading}
-            className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
-            <HiUsers className="w-4 h-4 text-violet-400" /> {t("nav_customers")}
-          </button>
-          <button onClick={exportCars} disabled={loading}
-            className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
-            <TbCar className="w-4 h-4 text-blue-400" /> {t("nav_cars")}
-          </button>
-          <button onClick={exportJobs} disabled={loading}
-            className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
-            <TbTool className="w-4 h-4 text-orange-400" /> {t("nav_jobs")}
-          </button>
-        </div>
-      </div>
+      {activeTab === "db" ? (
+        <>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-6">
+            <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <HiDatabase className="w-4 h-4" /> {fr ? "Sauvegarde" : "Backup"}
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              <button onClick={backupAll} disabled={loading}
+                className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer">
+                <HiDownload className="w-4 h-4" />
+                {fr ? "Exporter toutes les données (JSON)" : "Export all data (JSON)"}
+              </button>
+              <button disabled
+                className="flex items-center gap-2 bg-neutral-700 text-neutral-400 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-not-allowed">
+                <HiDatabase className="w-4 h-4" />
+                {fr ? "SQL désactivé" : "SQL export disabled"}
+              </button>
+            </div>
+          </div>
 
-      {/* User management */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-            <HiUsers className="w-4 h-4" /> {fr ? "Utilisateurs" : "Users"}
-          </h2>
-          <button onClick={loadUsers} disabled={loading}
-            className="text-xs text-violet-400 hover:text-violet-300 transition-colors cursor-pointer">
-            {fr ? "Charger" : "Load"}
-          </button>
-        </div>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <HiDownload className="w-4 h-4" /> {fr ? "Exporter en CSV" : "Export as CSV"}
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              <button onClick={exportCustomers} disabled={loading}
+                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
+                <HiUsers className="w-4 h-4 text-violet-400" /> {t("nav_customers")}
+              </button>
+              <button onClick={exportCars} disabled={loading}
+                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
+                <TbCar className="w-4 h-4 text-blue-400" /> {t("nav_cars")}
+              </button>
+              <button onClick={exportJobs} disabled={loading}
+                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
+                <TbTool className="w-4 h-4 text-orange-400" /> {t("nav_jobs")}
+              </button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="space-y-6">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4 gap-3">
+              <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                <HiUsers className="w-4 h-4" /> {fr ? "Ajouter un utilisateur" : "Add User"}
+              </h2>
+            </div>
 
-        {users.length === 0 ? (
-          <p className="text-neutral-600 italic text-sm">
-            {fr ? 'Cliquez sur "Charger" pour voir les utilisateurs.' : 'Click "Load" to see users.'}
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between bg-neutral-800 rounded-xl px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-neutral-100">{u.name || u.id.slice(0, 8)}</p>
-                  <p className="text-xs text-neutral-500">{u.id}</p>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <label className="block">
+                <span className="text-xs text-neutral-400">{fr ? "Nom" : "Name"}</span>
+                <input
+                  type="text"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser((prev) => ({ ...prev, name: e.target.value }))}
+                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                  placeholder={fr ? "Nom complet" : "Full name"}
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-xs text-neutral-400">Email</span>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
+                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                  placeholder="you@example.com"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-xs text-neutral-400">{fr ? "Mot de passe" : "Password"}</span>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser((prev) => ({ ...prev, password: e.target.value }))}
+                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                  placeholder="••••••••"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-xs text-neutral-400">{fr ? "Rôle" : "Role"}</span>
                 <select
-                  value={u.role}
-                  onChange={(e) => changeRole(u.id, e.target.value)}
-                  disabled={u.id === profile?.id}
-                  className="bg-neutral-700 border border-neutral-600 rounded-lg px-2 py-1.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50 cursor-pointer"
+                  value={newUser.role}
+                  onChange={(e) => setNewUser((prev) => ({ ...prev, role: e.target.value }))}
+                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
                 >
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
                 </select>
-              </div>
-            ))}
+              </label>
+            </div>
+
+            <button
+              onClick={addUser}
+              disabled={loading}
+              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white px-5 py-3 rounded-xl text-sm font-medium transition-colors"
+            >
+              <HiCheckCircle className="w-4 h-4" />
+              {fr ? "Ajouter l'utilisateur" : "Add user"}
+            </button>
           </div>
-        )}
-      </div>
+
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                <HiUsers className="w-4 h-4" /> {fr ? "Liste des utilisateurs" : "User list"}
+              </h2>
+            </div>
+
+            {users.length === 0 ? (
+              <p className="text-neutral-600 italic text-sm">
+                {fr ? 'Aucun utilisateur trouvé.' : 'No users found.'}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {users.map((u) => (
+                  <div key={u.id} className="flex items-center justify-between bg-neutral-800 rounded-xl px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-neutral-100">{u.name || u.id.slice(0, 8)}</p>
+                      <p className="text-xs text-neutral-500">{u.email || u.id}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={u.role}
+                        onChange={(e) => changeRole(u.id, e.target.value)}
+                        disabled={u.id === profile?.id}
+                        className="bg-neutral-700 border border-neutral-600 rounded-lg px-2 py-1.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50 cursor-pointer"
+                      >
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <button
+                        onClick={() => openEditUser(u)}
+                        disabled={u.id === profile?.id}
+                        className="p-1.5 text-neutral-400 hover:text-violet-300 hover:bg-neutral-700 rounded transition-colors cursor-pointer disabled:opacity-50"
+                        title={fr ? "Modifier" : "Edit"}
+                      >
+                        <HiPencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openDeleteUser(u)}
+                        disabled={u.id === profile?.id}
+                        className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer disabled:opacity-50"
+                        title={fr ? "Supprimer" : "Delete"}
+                      >
+                        <HiTrash className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {modal === "delete" && deleteTarget && (
+        <Modal title={fr ? "Supprimer l'utilisateur" : "Delete User"} onClose={closeModal}>
+          <p className="text-neutral-300 text-sm">
+            {fr ? "Êtes-vous sûr de vouloir supprimer" : "Are you sure you want to delete"} <span className="font-semibold text-neutral-100">{deleteTarget.name}</span>?
+          </p>
+          <div className="flex justify-end gap-3 mt-5">
+            <button onClick={closeModal} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">{fr ? "Annuler" : "Cancel"}</button>
+            <button onClick={handleConfirmDelete} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors cursor-pointer">{fr ? "Supprimer" : "Delete"}</button>
+          </div>
+        </Modal>
+      )}
+
+      {modal === "edit" && editTarget && (
+        <Modal title={fr ? "Modifier l'utilisateur" : "Edit User"} onClose={closeModal}>
+          <div className="space-y-4">
+            <label className="block">
+              <span className="text-xs text-neutral-400">{fr ? "Nom" : "Name"}</span>
+              <input
+                type="text"
+                value={editForm.name}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-xs text-neutral-400">Email</span>
+              <input
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+                className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-xs text-neutral-400">{fr ? "Nouveau mot de passe" : "New password"}</span>
+              <input
+                type="password"
+                value={editForm.password}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, password: e.target.value }))}
+                className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                placeholder={fr ? "Laissez vide pour conserver" : "Leave blank to keep current"}
+              />
+            </label>
+
+            <div className="flex justify-end gap-3 mt-3">
+              <button onClick={closeModal} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">{fr ? "Annuler" : "Cancel"}</button>
+              <button onClick={async () => {
+                await withStatus(handleSaveEdit, fr ? "✅ Utilisateur mis à jour" : "✅ User updated");
+              }} className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm rounded-lg transition-colors cursor-pointer">{fr ? "Enregistrer" : "Save"}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

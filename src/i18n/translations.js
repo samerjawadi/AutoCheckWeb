@@ -23,6 +23,7 @@ export const translations = {
     total:      "Total",
     actions:    "Actions",
     search:     "Search",
+    loading:    "Loading...",
     owner:      "Owner",
     date:       "Date",
     status:     "Status",
@@ -94,7 +95,7 @@ export const translations = {
     cars_no_customers:"No customers found. Please add a customer first.",
     cars_delete_msg:  "Are you sure you want to delete the car with plate {plate}? This action cannot be undone.",
     cars_vin_placeholder: "17-char VIN (optional)",
-    cars_desc_placeholder: "Colour, trim, notes...",
+    cars_desc_placeholder: "Trim, notes...",
 
     // Jobs
     jobs_title:        "Jobs",
@@ -111,6 +112,9 @@ export const translations = {
     jobs_line_n:       "Line {n}",
     jobs_what_done:    "What was done",
     jobs_what_done_ph: "e.g. Replaced front brake pads and bled the system...",
+    jobs_select_customer: "Select customer",
+    jobs_print_sheet: "Repair Sheet",
+    jobs_edit_payment: "Edit Payment",
     jobs_price:        "Price (TND)",
     jobs_supplier:     "Supplier",
     jobs_line_total:   "Line total",
@@ -187,6 +191,7 @@ export const translations = {
     total:      "Total",
     actions:    "Actions",
     search:     "Recherche",
+    loading:    "Chargement...",
     owner:      "Propriétaire",
     date:       "Date",
     status:     "Statut",
@@ -258,7 +263,7 @@ export const translations = {
     cars_no_customers:"Aucun client trouvé. Veuillez d'abord ajouter un client.",
     cars_delete_msg:  "Êtes-vous sûr de vouloir supprimer le véhicule avec la plaque {plate} ? Cette action est irréversible.",
     cars_vin_placeholder: "VIN 17 caractères (facultatif)",
-    cars_desc_placeholder: "Couleur, finition, notes...",
+    cars_desc_placeholder: "Finition, notes...",
 
     // Jobs
     jobs_title:        "Travaux",
@@ -275,6 +280,9 @@ export const translations = {
     jobs_line_n:       "Ligne {n}",
     jobs_what_done:    "Travail effectué",
     jobs_what_done_ph: "ex. Remplacement plaquettes avant et purge du circuit...",
+    jobs_select_customer: "Sélectionner un client",
+    jobs_print_sheet: "Fiche de réparation",
+    jobs_edit_payment: "Modifier le paiement",
     jobs_price:        "Prix (TND)",
     jobs_supplier:     "Fournisseur",
     jobs_line_total:   "Total ligne",

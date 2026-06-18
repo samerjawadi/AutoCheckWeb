@@ -127,7 +127,13 @@ export default function SupplierHistory() {
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_STYLE[supplier?.type] ?? TYPE_STYLE.Other}`}>
                   {supplier?.type}
                 </span>
-                {supplier?.phone && <span className="text-xs text-neutral-500">{supplier.phone}</span>}
+                {supplier?.phone && (
+                  <div className="flex flex-wrap gap-1">
+                    {supplier.phone.split(" / ").map((p, i) => (
+                      <span key={i} className="text-xs text-neutral-500">{p}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

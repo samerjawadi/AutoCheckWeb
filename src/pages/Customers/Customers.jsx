@@ -3,6 +3,7 @@ import { HiPlus, HiPencil, HiTrash, HiPhone } from "react-icons/hi";
 import { TbHistory } from "react-icons/tb";
 import { Link } from "react-router-dom";
 import { db } from "../../services/localDB";
+import LoadingState from "../../components/LoadingState";
 import Modal from "../../components/Modal";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -23,13 +24,19 @@ export default function Customers() {
   const [allCars, setAllCars]       = useState([]);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(null); // null | 'add' | 'edit' | 'delete'
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const reload = async () => {
-    setCustomers(await db.customers.getAll());
-    setAllCars(await db.cars.getAll());
+    setLoading(true);
+    try {
+      setCustomers(await db.customers.getAll());
+      setAllCars(await db.cars.getAll());
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => { reload(); }, []);
 
@@ -86,6 +93,14 @@ export default function Customers() {
       c.phone.includes(search)
   );
 
+  if (loading) {
+    return (
+      <div className="page-enter p-3 md:p-6 w-full">
+        <LoadingState label={t("loading")} />
+      </div>
+    );
+  }
+
   return (
     <div className="page-enter p-3 md:p-6 w-full">
       <div className="flex items-center justify-between mb-6">
@@ -127,7 +142,9 @@ export default function Customers() {
                   <td className="px-4 py-3 text-neutral-100 font-medium">{c.name}</td>
                   <td className="px-4 py-3 text-neutral-300">
                     <div className="flex flex-wrap gap-1">
-                      {strToPhones(c.phone).map((p, i) => (
+                      {strToPhones(c.phone).filter(Boolean).length === 0 ? (
+                        <span className="text-neutral-500">—</span>
+                      ) : strToPhones(c.phone).filter(Boolean).map((p, i) => (
                         <span key={i} className="flex items-center gap-1 text-xs bg-neutral-800 px-2 py-0.5 rounded-full">
                           <HiPhone className="w-3 h-3 text-neutral-500" />{p}
                         </span>
@@ -168,7 +185,7 @@ export default function Customers() {
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className={labelCls}>{t("phone")} *</label>
+                <label className={labelCls}>{t("phone")}</label>
                 <button type="button" onClick={addPhone}
                   className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors cursor-pointer">
                   <HiPlus className="w-3.5 h-3.5" /> Add number
@@ -178,7 +195,6 @@ export default function Customers() {
                 {form.phones.map((p, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <input
-                      required={idx === 0}
                       value={p}
                       onChange={(e) => setPhone(idx, e.target.value)}
                       className={inputCls}
