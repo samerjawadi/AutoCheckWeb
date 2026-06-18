@@ -165,3 +165,34 @@
     border-right-color: var(--border);
   }
 }
+
+/* Subtle repeating car logs background used on history/log pages */
+/* (Reverted car-logos background additions) */
+
+/* Login background: tile car logos image with a subtle dark fade */
+.login-logos-bg {
+  background-image: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.8)), url('/car-logos.png');
+  background-repeat: repeat;
+  background-size: 100%;
+  background-position: center center;
+}
+
+/* Skeleton loaders */
+@keyframes shine {
+  to { background-position-x: -200%; }
+}
+.skeleton {
+  background: linear-gradient(110deg, #1f1f1f 8%, #2b2b2b 18%, #1f1f1f 33%);
+  border-radius: 6px;
+  background-size: 200% 100%;
+  animation: 1.2s shine linear infinite;
+}
+.skeleton--small { width: 56px; height: 20px; display: inline-block; }
+.skeleton--inline { width: 80px; height: 18px; display: inline-block; }
+.skeleton--block { width: 100%; display: block; border-radius: 8px; }
+.skeleton-card { width: 100%; background: transparent; display: flex; flex-direction: column; gap: 8px; }
+.skeleton__image { height: 120px; border-radius: 10px; }
+.skeleton__content { padding: 8px 0; display: flex; flex-direction: column; gap: 8px; }
+.skeleton__title { height: 20px; width: 50%; border-radius: 6px; }
+.skeleton__text { height: 12px; width: 80%; border-radius: 6px; }
+

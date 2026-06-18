@@ -72,10 +72,16 @@ export default function AdminPanel() {
 
   const withStatus = async (fn, msg) => {
     setLoading(true);
+    const start = Date.now();
     setStatus("");
     try { await fn(); setStatus(msg); }
     catch (e) { setStatus("❌ " + e.message); }
-    finally { setLoading(false); setTimeout(() => setStatus(""), 4000); }
+    finally {
+      const delta = Date.now() - start;
+      const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
+      const wait = Math.max(0, minMs - delta);
+      setTimeout(() => { setLoading(false); setTimeout(() => setStatus(""), 4000); }, wait);
+    }
   };
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import { db } from "../../services/localDB";
 import { calcTotal, calcPaid } from "../../utils/finance";
 import { useLanguage } from "../../context/LanguageContext";
 import LoadingState from "../../components/LoadingState";
+import Skeleton from "../../components/Skeleton";
 import PinLock, { revokeSession } from "../../components/PinLock";
 import { HiLockClosed, HiKey } from "react-icons/hi";
 
@@ -65,6 +66,7 @@ export default function Finance() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      const start = Date.now();
       try {
         const [jobs, customers, cars, suppliers] = await Promise.all([
           db.jobs.getAll(), db.customers.getAll(),
@@ -72,22 +74,19 @@ export default function Finance() {
         ]);
         setData({ jobs, customers, cars, suppliers });
       } finally {
-        setLoading(false);
+        const delta = Date.now() - start;
+        const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
+        const wait = Math.max(0, minMs - delta);
+        setTimeout(() => setLoading(false), wait);
       }
     };
     load();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="page-enter p-3 md:p-6 w-full">
-        <LoadingState label={t("loading")} />
-      </div>
-    );
-  }
-
-  if (!data) return null;
-  const { jobs, customers, suppliers } = data;
+  // Use safe fallbacks so the page layout renders while loading
+  const jobs = data?.jobs ?? [];
+  const customers = data?.customers ?? [];
+  const suppliers = data?.suppliers ?? [];
 
   const scoped = filterByPeriod(jobs, period);
 
@@ -239,25 +238,25 @@ export default function Finance() {
         </div>
 
         {/* KPI cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard label={fr ? "Chiffre d'affaires" : "Total Billed"} value={fmt(totalBilled)} color="text-neutral-100" />
-          <StatCard label={fr ? "Encaissé" : "Collected"} value={fmt(totalPaid)} color="text-green-400" />
-          <StatCard label={fr ? "Solde restant" : "Outstanding"} value={fmt(Math.max(0, totalBalance))} color={totalBalance > 0 ? "text-orange-400" : "text-green-400"} />
-          <StatCard label={fr ? "Panier moyen" : "Avg Job Value"} value={fmt(avgJob)} sub={`${scoped.length} ${t("nav_jobs").toLowerCase()}`} color="text-violet-400" />
-        </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <StatCard label={fr ? "Chiffre d'affaires" : "Total Billed"} value={loading ? <Skeleton size="small" /> : fmt(totalBilled)} color="text-neutral-100" />
+                <StatCard label={fr ? "Encaissé" : "Collected"} value={loading ? <Skeleton size="small" /> : fmt(totalPaid)} color="text-green-400" />
+                <StatCard label={fr ? "Solde restant" : "Outstanding"} value={loading ? <Skeleton size="small" /> : fmt(Math.max(0, totalBalance))} color={totalBalance > 0 ? "text-orange-400" : "text-green-400"} />
+                <StatCard label={fr ? "Panier moyen" : "Avg Job Value"} value={loading ? <Skeleton size="small" /> : fmt(avgJob)} sub={loading ? undefined : `${scoped.length} ${t("nav_jobs").toLowerCase()}`} color="text-violet-400" />
+              </div>
 
         {/* Payment status cards */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-5 text-center">
-            <p className="text-3xl font-bold text-green-400">{paidCount}</p>
+            <p className="text-3xl font-bold text-green-400">{loading ? <Skeleton size="small" /> : paidCount}</p>
             <p className="text-xs text-neutral-400 mt-1">{t("pay_paid")}</p>
           </div>
           <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-5 text-center">
-            <p className="text-3xl font-bold text-yellow-400">{partialCount}</p>
+            <p className="text-3xl font-bold text-yellow-400">{loading ? <Skeleton size="small" /> : partialCount}</p>
             <p className="text-xs text-neutral-400 mt-1">{t("pay_partial")}</p>
           </div>
           <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-5 text-center">
-            <p className="text-3xl font-bold text-red-400">{unpaidCount}</p>
+            <p className="text-3xl font-bold text-red-400">{loading ? <Skeleton size="small" /> : unpaidCount}</p>
             <p className="text-xs text-neutral-400 mt-1">{t("pay_unpaid")}</p>
           </div>
         </div>
@@ -265,18 +264,22 @@ export default function Finance() {
         {/* Revenue line chart — 12 months */}
         <div className="mb-8">
           <Section title={fr ? "Évolution du chiffre d'affaires (12 mois)" : "Revenue over 12 months"}>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={revenueByMonth} margin={{ top: 4, right: 16, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                <XAxis dataKey="month" tick={{ fill: "#737373", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#737373", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [fmt(v), name]} />
-                <Legend formatter={(v) => <span style={{ color: "#a3a3a3", fontSize: 11 }}>{v}</span>} />
-                <Line type="monotone" dataKey="billed"    name={fr ? "Facturé" : "Billed"}    stroke="#a78bfa" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="collected" name={fr ? "Encaissé" : "Collected"} stroke="#4ade80" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="balance"   name={fr ? "Impayé" : "Outstanding"} stroke="#f97316" strokeWidth={2} dot={false} strokeDasharray="4 2" />
-              </LineChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <div className="py-10"><Skeleton size="block" height={220} /></div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={revenueByMonth} margin={{ top: 4, right: 16, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
+                  <XAxis dataKey="month" tick={{ fill: "#737373", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#737373", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [fmt(v), name]} />
+                  <Legend formatter={(v) => <span style={{ color: "#a3a3a3", fontSize: 11 }}>{v}</span>} />
+                  <Line type="monotone" dataKey="billed"    name={fr ? "Facturé" : "Billed"}    stroke="#a78bfa" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="collected" name={fr ? "Encaissé" : "Collected"} stroke="#4ade80" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="balance"   name={fr ? "Impayé" : "Outstanding"} stroke="#f97316" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </Section>
         </div>
 
@@ -284,7 +287,9 @@ export default function Finance() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
           {/* Payment pie */}
           <Section title={fr ? "Répartition paiements" : "Payment Breakdown"}>
-            {payPie.length === 0 ? (
+            {loading ? (
+              <div className="py-10"><Skeleton size="block" height={200} /></div>
+            ) : payPie.length === 0 ? (
               <p className="text-neutral-600 italic text-xs text-center py-8">{t("dashboard_no_jobs")}</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
@@ -301,7 +306,9 @@ export default function Finance() {
 
           {/* Top customers */}
           <Section title={fr ? "Top clients (encaissé)" : "Top Customers (collected)"}>
-            {topCustomers.length === 0 ? (
+            {loading ? (
+              <div className="py-6"><Skeleton size="card" /></div>
+            ) : topCustomers.length === 0 ? (
               <p className="text-neutral-600 italic text-xs">{t("dashboard_no_jobs")}</p>
             ) : (
               <div className="flex flex-col gap-2">
@@ -326,7 +333,9 @@ export default function Finance() {
 
           {/* Supplier spend */}
           <Section title={fr ? "Dépenses fournisseurs" : "Supplier Spend"}>
-            {supplierSpend.length === 0 ? (
+            {loading ? (
+              <div className="py-6"><Skeleton size="card" /></div>
+            ) : supplierSpend.length === 0 ? (
               <p className="text-neutral-600 italic text-xs">{t("dashboard_no_jobs")}</p>
             ) : (
               <div className="flex flex-col gap-2">

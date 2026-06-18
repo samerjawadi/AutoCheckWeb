@@ -98,7 +98,6 @@ export default function SupplierHistory() {
     };
     load();
   }, [supplierId]);
-
   if (!data) return null;
   const { supplier, jobs, totalBilled, jobCount, lineCount } = data;
 

@@ -82,13 +82,17 @@ export default function Jobs() {
 
   const reload = async () => {
     setLoading(true);
+    const start = Date.now();
     try {
       setJobs(await db.jobs.getAll());
       setCustomers(await db.customers.getAll());
       setCars(await db.cars.getAll());
       setSuppliers(await db.suppliers.getAll());
     } finally {
-      setLoading(false);
+      const delta = Date.now() - start;
+      const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
+      const wait = Math.max(0, minMs - delta);
+      setTimeout(() => setLoading(false), wait);
     }
   };
   useEffect(() => { reload(); }, []);
@@ -393,13 +397,7 @@ export default function Jobs() {
     </Modal>
   );
 
-  if (loading) {
-    return (
-      <div className="page-enter p-3 md:p-6 w-full">
-        <LoadingState label={t("loading")} />
-      </div>
-    );
-  }
+  // Keep filters visible; show loader inside table while loading
 
   return (
     <div className="page-enter p-3 md:p-6 w-full">
@@ -497,7 +495,13 @@ export default function Jobs() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && (
+            {loading ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-10 text-center">
+                  <LoadingState inline label={t("loading")} />
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-10 text-center text-neutral-500">
                   {search || statusFilter !== "All" || dateFilter !== "All"
@@ -505,8 +509,7 @@ export default function Jobs() {
                     : t("jobs_empty")}
                 </td>
               </tr>
-            )}
-            {filtered.map((job) => (
+            ) : filtered.map((job) => (
               <tr key={job.id}
                 className="border-b border-neutral-800/50 hover:bg-neutral-800/40 transition-colors">
                 <td className="px-4 py-3 text-neutral-100 font-medium">{customerName(job.customerId)}</td>

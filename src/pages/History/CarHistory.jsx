@@ -74,7 +74,6 @@ export default function CarHistory() {
     };
     load();
   }, [carId]);
-
   if (!data) return null;
   const { car, owner, jobs, totalSpent, totalBilled, totalBalance } = data;
 

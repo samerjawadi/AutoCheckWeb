@@ -6,6 +6,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { db } from "../../services/localDB";
+import LoadingState from "../../components/LoadingState";
+import Skeleton from "../../components/Skeleton";
 import { calcTotal } from "../../utils/finance";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -64,6 +66,7 @@ function StatCard({ icon: Icon, label, value, sub, color }) {
 export default function Home() {
   const { t, lang } = useLanguage();
   const [data, setData]     = useState(null);
+  const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("All");
 
   const DATE_PERIODS = [
@@ -75,18 +78,24 @@ export default function Home() {
 
   useEffect(() => {
     const load = async () => {
-      const jobs      = await db.jobs.getAll();
-      const customers = await db.customers.getAll();
-      const cars      = await db.cars.getAll();
-      const suppliers = await db.suppliers.getAll();
-      setData({ jobs, customers, cars, suppliers });
+      setLoading(true);
+      try {
+        const jobs      = await db.jobs.getAll();
+        const customers = await db.customers.getAll();
+        const cars      = await db.cars.getAll();
+        const suppliers = await db.suppliers.getAll();
+        setData({ jobs, customers, cars, suppliers });
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
 
-  if (!data) return null;
-
-  const { jobs, customers, cars, suppliers } = data;
+  const jobs = data?.jobs ?? [];
+  const customers = data?.customers ?? [];
+  const cars = data?.cars ?? [];
+  const suppliers = data?.suppliers ?? [];
 
   const scoped     = filterByPeriod(jobs, period);
   const pending    = scoped.filter((j) => j.status === "Pending");
@@ -148,11 +157,11 @@ export default function Home() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
-        <StatCard icon={HiUsers}         label={t("dashboard_customers")} value={customers.length}   color="bg-violet-500/10 text-violet-400" />
-        <StatCard icon={TbCar}           label={t("dashboard_cars")}      value={cars.length}        color="bg-blue-500/10 text-blue-400" />
-        <StatCard icon={TbTool}          label={t("dashboard_jobs")}      value={scoped.length}      sub={period === "All" ? t("dashboard_today", { n: todayCount }) : undefined} color="bg-orange-500/10 text-orange-400" />
-        <StatCard icon={TbBuildingStore} label={t("dashboard_suppliers")} value={suppliers.length}   color="bg-emerald-500/10 text-emerald-400" />
-        <StatCard icon={TbCar}           label={lang === "fr" ? "Véhicules travaillés" : "Cars Worked"} value={carsWorked} sub={period !== "All" ? DATE_PERIODS.find(d => d.key === period)?.label : undefined} color="bg-cyan-500/10 text-cyan-400" />
+        <StatCard icon={HiUsers}         label={t("dashboard_customers")} value={loading ? <Skeleton size="small" /> : customers.length}   color="bg-violet-500/10 text-violet-400" />
+        <StatCard icon={TbCar}           label={t("dashboard_cars")}      value={loading ? <Skeleton size="small" /> : cars.length}        color="bg-blue-500/10 text-blue-400" />
+        <StatCard icon={TbTool}          label={t("dashboard_jobs")}      value={loading ? <Skeleton size="small" /> : scoped.length}      sub={period === "All" ? (loading ? undefined : t("dashboard_today", { n: todayCount })) : undefined} color="bg-orange-500/10 text-orange-400" />
+        <StatCard icon={TbBuildingStore} label={t("dashboard_suppliers")} value={loading ? <Skeleton size="small" /> : suppliers.length}   color="bg-emerald-500/10 text-emerald-400" />
+        <StatCard icon={TbCar}           label={lang === "fr" ? "Véhicules travaillés" : "Cars Worked"} value={loading ? <Skeleton size="small" /> : carsWorked} sub={period !== "All" ? DATE_PERIODS.find(d => d.key === period)?.label : undefined} color="bg-cyan-500/10 text-cyan-400" />
       </div>
 
       {/* Job status */}
@@ -178,7 +187,7 @@ export default function Home() {
       </div>
 
       {/* Top cars bar chart */}
-      {topCars.length > 0 && (
+      {!loading && topCars.length > 0 && (
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-8">
           <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4">
             {lang === "fr" ? "Véhicules les plus travaillés" : "Most Serviced Cars"}
@@ -219,7 +228,18 @@ export default function Home() {
             </tr>
           </thead>
           <tbody>
-            {recent.map((job) => (
+            {loading ? (
+              // show placeholder empty rows while loading
+              Array.from({ length: 4 }).map((_, i) => (
+                <tr key={`ph-${i}`} className="border-b border-neutral-800/50">
+                  <td className="px-5 py-4"><Skeleton size="inline" /></td>
+                  <td className="px-5 py-4"><Skeleton size="inline" /></td>
+                  <td className="px-5 py-4"><Skeleton size="inline" /></td>
+                  <td className="px-5 py-4"><Skeleton size="inline" /></td>
+                  <td className="px-5 py-4 text-right"><Skeleton size="small" /></td>
+                </tr>
+              ))
+            ) : recent.map((job) => (
               <tr key={job.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/40 transition-colors">
                 <td className="px-5 py-3 text-neutral-100 font-medium">{job.customerName}</td>
                 <td className="px-5 py-3 text-neutral-400">{job.carLabel}</td>

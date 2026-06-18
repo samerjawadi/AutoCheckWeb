@@ -31,11 +31,15 @@ export default function Customers() {
 
   const reload = async () => {
     setLoading(true);
+    const start = Date.now();
     try {
       setCustomers(await db.customers.getAll());
       setAllCars(await db.cars.getAll());
     } finally {
-      setLoading(false);
+      const delta = Date.now() - start;
+      const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
+      const wait = Math.max(0, minMs - delta);
+      setTimeout(() => setLoading(false), wait);
     }
   };
   useEffect(() => { reload(); }, []);
@@ -93,13 +97,7 @@ export default function Customers() {
       c.phone.includes(search)
   );
 
-  if (loading) {
-    return (
-      <div className="page-enter p-3 md:p-6 w-full">
-        <LoadingState label={t("loading")} />
-      </div>
-    );
-  }
+  // Keep filters visible; show loader inside table while loading
 
   return (
     <div className="page-enter p-3 md:p-6 w-full">
@@ -128,14 +126,19 @@ export default function Customers() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && (
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-10 text-center">
+                  <LoadingState inline label={t("loading")} />
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-10 text-center text-neutral-500">
                   {search ? t("customers_empty_search") : t("customers_empty")}
                 </td>
               </tr>
-            )}
-            {filtered.map((c) => {
+            ) : filtered.map((c) => {
               const carCount = allCars.filter((car) => car.customerId === c.id).length;
               return (
                 <tr key={c.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/40 transition-colors">

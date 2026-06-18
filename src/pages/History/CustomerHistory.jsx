@@ -76,7 +76,6 @@ export default function CustomerHistory() {
     };
     load();
   }, [customerId]);
-
   if (!data) return null;
   const { customer, jobs, cars, totalSpent, totalBilled, totalBalance } = data;
 

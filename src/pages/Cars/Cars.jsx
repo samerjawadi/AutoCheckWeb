@@ -28,11 +28,15 @@ export default function Cars() {
 
   const reload = async () => {
     setLoading(true);
+    const start = Date.now();
     try {
       setCars(await db.cars.getAll());
       setCustomers(await db.customers.getAll());
     } finally {
-      setLoading(false);
+      const delta = Date.now() - start;
+      const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
+      const wait = Math.max(0, minMs - delta);
+      setTimeout(() => setLoading(false), wait);
     }
   };
   useEffect(() => { reload(); }, []);
@@ -96,13 +100,7 @@ export default function Cars() {
       customerName(car.customerId).toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) {
-    return (
-      <div className="page-enter p-3 md:p-6 w-full">
-        <LoadingState label={t("loading")} />
-      </div>
-    );
-  }
+  // Always show filters and table; render loader inside table while loading
 
   return (
     <div className="page-enter p-3 md:p-6 w-full">
@@ -132,14 +130,19 @@ export default function Cars() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && (
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-10 text-center">
+                  <LoadingState inline label={t("loading")} />
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-10 text-center text-neutral-500">
                   {search ? t("cars_empty_search") : t("cars_empty")}
                 </td>
               </tr>
-            )}
-            {filtered.map((car) => (
+            ) : filtered.map((car) => (
               <tr key={car.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/40 transition-colors">
                 <td className="px-4 py-3 text-neutral-100 font-medium font-mono">{car.plate}</td>
                 <td className="px-4 py-3 text-neutral-400 font-mono text-xs">{car.vin || "—"}</td>

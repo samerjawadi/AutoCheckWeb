@@ -13,18 +13,22 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    const start = Date.now();
     setError("");
     try {
       await login(emailOrName, password);
     } catch (err) {
       setError(err.message ?? "Login failed");
     } finally {
-      setLoading(false);
+      const delta = Date.now() - start;
+      const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
+      const wait = Math.max(0, minMs - delta);
+      setTimeout(() => setLoading(false), wait);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-neutral-950 px-4">
+    <div className="flex items-center justify-center min-h-screen login-logos-bg bg-neutral-950 px-4">
       <form onSubmit={handleSubmit}
         className="w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-2xl p-8 flex flex-col gap-6 shadow-2xl">
 
@@ -43,6 +47,8 @@ export default function LoginPage() {
             <HiLockClosed className="w-8 h-8 text-violet-400" />
           </div>
         </div>
+
+        
 
         {/* Email or Name */}
         <div className="flex flex-col gap-1.5">
