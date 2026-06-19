@@ -171,9 +171,9 @@
 
 /* Login background: tile car logos image with a subtle dark fade */
 .login-logos-bg {
-  background-image: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.8)), url('/car-logos.png');
+  background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url('/bg.svg');
   background-repeat: repeat;
-  background-size: 100%;
+  background-size: 60%;
   background-position: center center;
 }
 
