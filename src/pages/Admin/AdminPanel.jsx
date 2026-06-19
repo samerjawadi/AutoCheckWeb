@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { HiDownload, HiDatabase, HiCheckCircle, HiUsers, HiTrash, HiPencil } from "react-icons/hi";
-import { TbCar, TbTool, TbBuildingStore } from "react-icons/tb";
+import { HiDownload, HiDatabase, HiCheckCircle, HiUsers,HiUser, HiTrash } from "react-icons/hi";
+import { TbCar, TbTool, TbBuildingStore,TbTruckDelivery} from "react-icons/tb";
 import { db } from "../../services/localDB";
 import { authService } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
@@ -128,6 +128,17 @@ export default function AdminPanel() {
     }));
     downloadCSV(toCSV(flat, ["id", "customerId", "carId", "dateIn", "dateOut", "status", "notes", "totalLines", "totalAmount", "totalPaid"]), "jobs.csv");
   }, "✅ jobs.csv");
+
+    const exportSuppliers = () => withStatus(async () => {
+    const rows = await db.suppliers.getAll();
+    downloadCSV(toCSV(rows, ["id", "name", "phone", "email"]), "suppliers.csv");
+  }, "✅ suppliers.csv");
+
+    const exportUsers = () => withStatus(async () => {
+    const rows = await db.users.getAll();
+    downloadCSV(toCSV(rows, ["id", "name", "email", "role"]), "users.csv");
+  }, "✅ users.csv");
+
 
   const loadUsers = () => withStatus(async () => {
     const users = await authService.getAllUsers();
@@ -263,6 +274,14 @@ export default function AdminPanel() {
               <button onClick={exportJobs} disabled={loading}
                 className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
                 <TbTool className="w-4 h-4 text-orange-400" /> {t("nav_jobs")}
+              </button>
+              <button onClick={exportSuppliers} disabled={loading}
+                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
+                <TbTruckDelivery  className="w-4 h-4 text-green-400" /> {t("nav_suppliers")}
+              </button>
+              <button onClick={exportUsers} disabled={loading}
+                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
+                <HiUser className="w-4 h-4 text-pink-400" /> {t("users")}
               </button>
             </div>
           </div>

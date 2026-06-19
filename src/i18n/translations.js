@@ -33,6 +33,8 @@ export const translations = {
     none:       "— None —",
     yes:        "Yes",
     no:         "No",
+    user:       "User",
+    users:      "Users",
 
     // Periods
     period_all:       "All",
@@ -201,6 +203,8 @@ export const translations = {
     none:       "— Aucun —",
     yes:        "Oui",
     no:         "Non",
+    user:       "Utilisateur",
+    users:      "Utilisateurs",
 
     // Periods
     period_all:    "Tout",
