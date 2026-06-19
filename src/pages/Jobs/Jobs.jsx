@@ -10,9 +10,9 @@ import { useLanguage } from "../../context/LanguageContext";
 const STATUS_OPTIONS = ["Pending", "In Progress", "Done"];
 
 const STATUS_STYLE = {
-  Pending:     "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  Pending: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
   "In Progress": "bg-blue-500/10 text-blue-400 border border-blue-500/30",
-  Done:        "bg-green-500/10 text-green-400 border border-green-500/30",
+  Done: "bg-green-500/10 text-green-400 border border-green-500/30",
 };
 
 const genLineId = () => Math.random().toString(36).slice(2);
@@ -34,9 +34,9 @@ const inputCls =
 const labelCls = "block text-xs font-medium text-neutral-400 mb-1";
 
 const PAY_STYLE = {
-  Paid:    "bg-green-500/10 text-green-400 border border-green-500/30",
+  Paid: "bg-green-500/10 text-green-400 border border-green-500/30",
   Partial: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
-  Unpaid:  "bg-red-500/10 text-red-400 border border-red-500/30",
+  Unpaid: "bg-red-500/10 text-red-400 border border-red-500/30",
 };
 
 const fmt = (n) =>
@@ -47,41 +47,41 @@ export default function Jobs() {
   const [printJob, setPrintJob] = useState(null); // job to print
 
   const tStatus = (s) => {
-    if (s === "Pending")     return t("status_pending");
+    if (s === "Pending") return t("status_pending");
     if (s === "In Progress") return t("status_in_progress");
-    if (s === "Done")        return t("status_done");
+    if (s === "Done") return t("status_done");
     return s;
   };
 
   const tPay = (s) => {
-    if (s === "Paid")    return t("pay_paid");
+    if (s === "Paid") return t("pay_paid");
     if (s === "Partial") return t("pay_partial");
-    if (s === "Unpaid")  return t("pay_unpaid");
+    if (s === "Unpaid") return t("pay_unpaid");
     return s;
   };
-  const [jobs, setJobs]           = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [cars, setCars]           = useState([]);
+  const [cars, setCars] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [search, setSearch]         = useState("");
-  const [statusFilter, setStatus]   = useState("All");
-  const [payFilter, setPay]         = useState("All");
-  const [dateFilter, setDate]       = useState("All");
-  const [dateFrom, setDateFrom]     = useState("");
-  const [dateTo, setDateTo]         = useState("");
-  const [modal, setModal]         = useState(null);
-  const [form, setForm]           = useState(EMPTY_JOB);
-  const [editId, setEditId]       = useState(null);
-  const [deleteTarget, setDeleteTarget]   = useState(null);
-  const [viewTarget, setViewTarget]       = useState(null);
-  const [payModal, setPayModal]           = useState(false);
-  const [payJobId, setPayJobId]           = useState(null);
-  const [payEditId, setPayEditId]         = useState(null); // null = new, string = editing
-  const [payForm, setPayForm]             = useState({ date: new Date().toISOString().slice(0,10), amount: "", note: "" });
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatus] = useState("All");
+  const [payFilter, setPay] = useState("All");
+  const [dateFilter, setDate] = useState("All");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState(EMPTY_JOB);
+  const [editId, setEditId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewTarget, setViewTarget] = useState(null);
+  const [payModal, setPayModal] = useState(false);
+  const [payJobId, setPayJobId] = useState(null);
+  const [payEditId, setPayEditId] = useState(null); // null = new, string = editing
+  const [payForm, setPayForm] = useState({ date: new Date().toISOString().slice(0, 10), amount: "", note: "" });
+  const [submitting, setSubmitting] = useState(false);
 
-  const reload = async () => {
-    setLoading(true);
+  const reload = async (showSpinner = false) => {
     const start = Date.now();
     try {
       setJobs(await db.jobs.getAll());
@@ -89,18 +89,22 @@ export default function Jobs() {
       setCars(await db.cars.getAll());
       setSuppliers(await db.suppliers.getAll());
     } finally {
-      const delta = Date.now() - start;
-      const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
-      const wait = Math.max(0, minMs - delta);
-      setTimeout(() => setLoading(false), wait);
+      if (showSpinner) {
+        const delta = Date.now() - start;
+        const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
+        const wait = Math.max(0, minMs - delta);
+        setTimeout(() => setLoading(false), wait);
+      } else {
+        setLoading(false);
+      }
     }
   };
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(true); }, []);
 
-  const customerName   = (id) => customers.find((c) => c.id === id)?.name ?? "Unknown";
-  const supplierName   = (id) => suppliers.find((s) => s.id === id)?.name ?? "AutoCheck";
+  const customerName = (id) => customers.find((c) => c.id === id)?.name ?? "Unknown";
+  const supplierName = (id) => suppliers.find((s) => s.id === id)?.name ?? "AutoCheck";
   const defaultSupplier = () => suppliers.find((s) => s.name === "AutoCheck")?.id ?? (suppliers[0]?.id ?? "");
-  const carLabel     = (id) => {
+  const carLabel = (id) => {
     const car = cars.find((c) => c.id === id);
     return car ? `${car.manufacturer} ${car.model} — ${car.plate}` : "Unknown";
   };
@@ -111,26 +115,26 @@ export default function Jobs() {
 
   const openEdit = (job) => {
     const custExists = customers.some((c) => c.id === job.customerId);
-    const carExists  = cars.some((c) => c.id === job.carId);
+    const carExists = cars.some((c) => c.id === job.carId);
     setForm({
       customerId: custExists ? job.customerId : "",
-      carId:      carExists  ? job.carId      : "",
-      dateIn:     job.dateIn  ?? "",
-      dateOut:    job.dateOut ?? "",
-      status:     job.status  ?? "Pending",
-      notes:      job.notes   ?? "",
-      lines:      job.lines   ?? [],
+      carId: carExists ? job.carId : "",
+      dateIn: job.dateIn ?? "",
+      dateOut: job.dateOut ?? "",
+      status: job.status ?? "Pending",
+      notes: job.notes ?? "",
+      lines: job.lines ?? [],
     });
     setEditId(job.id);
     setModal("edit");
   };
 
   const openDelete = (job) => { setDeleteTarget(job); setModal("delete"); };
-  const openView   = (job) => { setViewTarget(job);   setModal("view");   };
-  const openPay    = (job) => {
+  const openView = (job) => { setViewTarget(job); setModal("view"); };
+  const openPay = (job) => {
     setPayJobId(job.id);
     setPayEditId(null);
-    setPayForm({ date: new Date().toISOString().slice(0,10), amount: "", note: "" });
+    setPayForm({ date: new Date().toISOString().slice(0, 10), amount: "", note: "" });
     setPayModal(true);
   };
 
@@ -203,15 +207,23 @@ export default function Jobs() {
   /* ── submit / delete ── */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     if (form.dateOut && form.dateIn && form.dateOut < form.dateIn) {
       alert(t("jobs_date_in") + " / " + t("jobs_date_out") + ": date out cannot be before date in");
       return;
     }
-    const payload = { ...form, lines: form.lines.filter((l) => l.description.trim()) };
-    if (modal === "add") await db.jobs.add(payload);
-    else await db.jobs.update(editId, payload);
-    await reload();
-    close();
+    setSubmitting(true);
+    try {
+      const payload = { ...form, lines: form.lines.filter((l) => l.description.trim()) };
+      if (modal === "add") await db.jobs.add(payload);
+      else await db.jobs.update(editId, payload);
+      await reload();
+      close();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -235,13 +247,13 @@ export default function Jobs() {
       carLabel(j.carId).toLowerCase().includes(q) ||
       (j.status ?? "").toLowerCase().includes(q);
     const matchStatus = statusFilter === "All" || j.status === statusFilter;
-    const matchPay    = payFilter === "All"    || payLabel(j.lines, j.payments) === payFilter;
+    const matchPay = payFilter === "All" || payLabel(j.lines, j.payments) === payFilter;
     const matchDate =
-      dateFilter === "All"       ? true :
-      dateFilter === "Today"     ? j.dateIn === today :
-      dateFilter === "This Week" ? j.dateIn >= weekStart && j.dateIn <= today :
-      /* Custom range */
-        (!dateFrom || j.dateIn >= dateFrom) && (!dateTo || j.dateIn <= dateTo);
+      dateFilter === "All" ? true :
+        dateFilter === "Today" ? j.dateIn === today :
+          dateFilter === "This Week" ? j.dateIn >= weekStart && j.dateIn <= today :
+            /* Custom range */
+            (!dateFrom || j.dateIn >= dateFrom) && (!dateTo || j.dateIn <= dateTo);
     return matchSearch && matchStatus && matchPay && matchDate;
   });
 
@@ -249,7 +261,7 @@ export default function Jobs() {
   const FormModal = (
     <Modal title={modal === "add" ? t("jobs_new") : t("jobs_edit")} onClose={close}>
       {customers.length === 0 ? (
-          <p className="text-neutral-400 text-sm">{t("jobs_no_customers")}</p>
+        <p className="text-neutral-400 text-sm">{t("jobs_no_customers")}</p>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Customer + Car */}
@@ -268,7 +280,7 @@ export default function Jobs() {
                 onChange={handleField} className={inputCls}
                 disabled={!form.customerId}>
                 <option value="" disabled>
-                    {form.customerId ? t("jobs_car") : t("jobs_pick_customer")}
+                  {form.customerId ? t("jobs_car") : t("jobs_pick_customer")}
                 </option>
                 {carsForCustomer(form.customerId).map((c) => (
                   <option key={c.id} value={c.id}>
@@ -383,13 +395,13 @@ export default function Jobs() {
           </div>
 
           <div className="flex justify-end gap-3 pt-1">
-            <button type="button" onClick={close}
+            <button type="button" onClick={close} disabled={submitting}
               className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">
               {t("cancel")}
             </button>
-            <button type="submit"
-              className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm rounded-lg transition-colors cursor-pointer">
-              {modal === "add" ? t("jobs_new") : t("save")}
+            <button type="submit" disabled={submitting}
+              className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm rounded-lg transition-colors cursor-pointer">
+              {submitting ? t("loading") : (modal === "add" ? t("jobs_new") : t("save"))}
             </button>
           </div>
         </form>
@@ -424,11 +436,10 @@ export default function Jobs() {
         <div className="flex items-center gap-1.5">
           {[{ key: "All", label: t("period_all") }, ...STATUS_OPTIONS.map(s => ({ key: s, label: tStatus(s) }))].map(({ key, label }) => (
             <button key={key} onClick={() => setStatus(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                statusFilter === key
-                  ? "bg-violet-600 text-white"
-                  : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
-              }`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${statusFilter === key
+                ? "bg-violet-600 text-white"
+                : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
+                }`}>
               {label}
             </button>
           ))}
@@ -438,11 +449,10 @@ export default function Jobs() {
         <div className="flex items-center gap-1.5">
           {[{ key: "All", label: t("period_all") }, { key: "Paid", label: t("pay_paid") }, { key: "Partial", label: t("pay_partial") }, { key: "Unpaid", label: t("pay_unpaid") }].map(({ key, label }) => (
             <button key={key} onClick={() => setPay(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                payFilter === key
-                  ? "bg-green-600 text-white"
-                  : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
-              }`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${payFilter === key
+                ? "bg-green-600 text-white"
+                : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
+                }`}>
               {label}
             </button>
           ))}
@@ -452,11 +462,10 @@ export default function Jobs() {
         <div className="flex items-center gap-1.5">
           {[{ key: "All", label: t("period_all") }, { key: "Today", label: t("period_today") }, { key: "This Week", label: t("period_week") }, { key: "Custom", label: t("period_custom") }].map(({ key, label }) => (
             <button key={key} onClick={() => { setDate(key); if (key !== "Custom") { setDateFrom(""); setDateTo(""); } }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                dateFilter === key
-                  ? "bg-orange-600 text-white"
-                  : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
-              }`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${dateFilter === key
+                ? "bg-orange-600 text-white"
+                : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
+                }`}>
               {label}
             </button>
           ))}
@@ -527,36 +536,35 @@ export default function Jobs() {
                 </td>
                 <td className="px-4 py-3 text-right text-neutral-200 font-mono">{fmt(calcTotal(job.lines ?? []))}</td>
                 <td className="px-4 py-3 text-right text-green-400 font-mono">{fmt(calcPaid(job.payments))}</td>
-                <td className={`px-4 py-3 text-right font-mono font-semibold ${
-                  calcBalance(job.lines ?? [], job.payments) <= 0 ? "text-green-400" : "text-orange-400"
-                }`}>
+                <td className={`px-4 py-3 text-right font-mono font-semibold ${calcBalance(job.lines ?? [], job.payments) <= 0 ? "text-green-400" : "text-orange-400"
+                  }`}>
                   {fmt(Math.max(0, calcBalance(job.lines ?? [], job.payments)))}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 justify-end">
                     <button onClick={() => openView(job)}
-                      className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("view") }>
+                      className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("view")}>
                       <HiEye className="w-4 h-4" />
                     </button>
                     <button onClick={async () => {
-                        const customer = await db.customers.getById(job.customerId);
-                        const cars     = await db.cars.getAll();
-                        const car      = cars.find((c) => c.id === job.carId);
-                        setPrintJob({ job, customer, car });
-                      }}
+                      const customer = await db.customers.getById(job.customerId);
+                      const cars = await db.cars.getAll();
+                      const car = cars.find((c) => c.id === job.carId);
+                      setPrintJob({ job, customer, car });
+                    }}
                       className="p-1.5 text-neutral-400 hover:text-yellow-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("jobs_print_sheet")}>
                       <HiPrinter className="w-4 h-4" />
                     </button>
                     <button onClick={() => openPay(job)}
-                      className="p-1.5 text-neutral-400 hover:text-green-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("record_payment") }>
+                      className="p-1.5 text-neutral-400 hover:text-green-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("record_payment")}>
                       <HiCash className="w-4 h-4" />
                     </button>
                     <button onClick={() => openEdit(job)}
-                      className="p-1.5 text-neutral-400 hover:text-violet-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("edit") }>
+                      className="p-1.5 text-neutral-400 hover:text-violet-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("edit")}>
                       <HiPencil className="w-4 h-4" />
                     </button>
                     <button onClick={() => openDelete(job)}
-                      className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("delete") }>
+                      className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("delete")}>
                       <HiTrash className="w-4 h-4" />
                     </button>
                   </div>
@@ -664,9 +672,8 @@ export default function Jobs() {
                     </div>
                     <div className="flex justify-between text-sm font-bold">
                       <span className="text-neutral-200">{t("jobs_balance_due")}</span>
-                      <span className={`font-mono ${
-                        calcBalance(viewTarget.lines, viewTarget.payments) <= 0 ? "text-green-400" : "text-orange-400"
-                      }`}>
+                      <span className={`font-mono ${calcBalance(viewTarget.lines, viewTarget.payments) <= 0 ? "text-green-400" : "text-orange-400"
+                        }`}>
                         {fmt(Math.max(0, calcBalance(viewTarget.lines, viewTarget.payments)))}
                       </span>
                     </div>
@@ -748,31 +755,18 @@ export default function Jobs() {
 const fmtNum = (n) =>
   Number(n || 0).toLocaleString("fr-TN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 
-function PrintFiche({ data, onDone }) {
-  const { job, customer, car } = data;
-  const total   = calcTotal(job.lines);
-  const paid    = calcPaid(job.payments);
-  const balance = Math.max(0, total - paid);
-  const ROWS    = 12;
-  const lines   = [...(job.lines ?? [])];
-  while (lines.length < ROWS) lines.push(null);
-
-  const advances = (job.payments ?? []).map((p) =>
-    `${p.date}${p.note ? " — " + p.note : ""}: ${fmtNum(p.amount)} DT`
-  ).join(" | ");
-
-  useEffect(() => {
-    // Brief delay to let the DOM paint, then print
-    const t = setTimeout(() => {
-      window.print();
-      // Clean up after print dialog closes
-      const after = setTimeout(onDone, 200);
-      return () => clearTimeout(after);
-    }, 300);
-    return () => clearTimeout(t);
-  }, []);
-
-  const Body = ({ copy }) => (
+function FicheBody({
+  copy,
+  customer,
+  car,
+  job,
+  lines,
+  total,
+  paid,
+  balance,
+  advances,
+}) {
+  return (
     <div className="fiche-copy">
       <div className="fiche-header">
         <div className="fiche-logo">
@@ -815,9 +809,46 @@ function PrintFiche({ data, onDone }) {
       </div>
     </div>
   );
+}
+function PrintFiche({ data, onDone }) {
+  const { job, customer, car } = data;
+
+  const total = calcTotal(job.lines);
+  const paid = calcPaid(job.payments);
+  const balance = Math.max(0, total - paid);
+
+  const ROWS = 12;
+  const lines = [...(job.lines ?? [])];
+  while (lines.length < ROWS) lines.push(null);
+
+  const advances = (job.payments ?? [])
+    .map(
+      (p) =>
+        `${p.date}${p.note ? " — " + p.note : ""}: ${fmtNum(p.amount)} DT`
+    )
+    .join(" | ");
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      window.print();
+      setTimeout(onDone, 200);
+    }, 300);
+
+    return () => clearTimeout(t);
+  }, [onDone]);
 
   return (
-    <div id="fiche" style={{ position: "fixed", left: 0, top: 0, zIndex: 9999, background: "#fff", width: "210mm" }}>
+    <div
+      id="fiche"
+      style={{
+        position: "fixed",
+        left: 0,
+        top: 0,
+        zIndex: 9999,
+        background: "#fff",
+        width: "210mm",
+      }}
+    >
       <style>{`
         @media print {
           body > *:not(#fiche) { display: none !important; }
@@ -825,8 +856,30 @@ function PrintFiche({ data, onDone }) {
           @page { size: A4 portrait; margin: 0; }
         }
       `}</style>
-      <Body copy="Original" />
-      <Body copy="Copie client" />
+
+      <FicheBody
+        copy="Original"
+        customer={customer}
+        car={car}
+        job={job}
+        lines={lines}
+        total={total}
+        paid={paid}
+        balance={balance}
+        advances={advances}
+      />
+
+      <FicheBody
+        copy="Copie client"
+        customer={customer}
+        car={car}
+        job={job}
+        lines={lines}
+        total={total}
+        paid={paid}
+        balance={balance}
+        advances={advances}
+      />
     </div>
   );
 }

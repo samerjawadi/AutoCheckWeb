@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { HiDownload, HiDatabase, HiCheckCircle, HiUsers,HiUser, HiTrash } from "react-icons/hi";
-import { TbCar, TbTool, TbBuildingStore,TbTruckDelivery} from "react-icons/tb";
+import { HiDownload, HiDatabase, HiCheckCircle, HiUsers, HiUser, HiTrash, HiPencil } from "react-icons/hi";
+import { TbCar, TbTool, TbTruckDelivery } from "react-icons/tb";
 import { db } from "../../services/localDB";
 import { authService } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
@@ -11,8 +11,8 @@ const fmt = (n) => Number(n || 0).toLocaleString("fr-TN", { style: "currency", c
 
 function downloadJSON(data, filename) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
@@ -36,22 +36,22 @@ function toSQLInsert(table, rows) {
 
 function downloadSQL(sql, filename) {
   const blob = new Blob([sql], { type: "application/sql;charset=utf-8;" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
 
 function toCSV(rows, cols) {
   const header = cols.join(",");
-  const lines  = rows.map((r) => cols.map((c) => `"${String(r[c] ?? "").replace(/"/g, '""')}"`).join(","));
+  const lines = rows.map((r) => cols.map((c) => `"${String(r[c] ?? "").replace(/"/g, '""')}"`).join(","));
   return [header, ...lines].join("\n");
 }
 
 function downloadCSV(csv, filename) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
@@ -62,7 +62,7 @@ export default function AdminPanel() {
   const fr = lang === "fr";
   const [activeTab, setActiveTab] = useState("db");
   const [status, setStatus] = useState("");
-  const [users, setUsers]   = useState([]);
+  const [users, setUsers] = useState([]);
   const [newUser, setNewUser] = useState({ email: "", password: "", name: "", role: "user" });
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
@@ -129,12 +129,12 @@ export default function AdminPanel() {
     downloadCSV(toCSV(flat, ["id", "customerId", "carId", "dateIn", "dateOut", "status", "notes", "totalLines", "totalAmount", "totalPaid"]), "jobs.csv");
   }, "✅ jobs.csv");
 
-    const exportSuppliers = () => withStatus(async () => {
+  const exportSuppliers = () => withStatus(async () => {
     const rows = await db.suppliers.getAll();
     downloadCSV(toCSV(rows, ["id", "name", "phone", "email"]), "suppliers.csv");
   }, "✅ suppliers.csv");
 
-    const exportUsers = () => withStatus(async () => {
+  const exportUsers = () => withStatus(async () => {
     const rows = await db.users.getAll();
     downloadCSV(toCSV(rows, ["id", "name", "email", "role"]), "users.csv");
   }, "✅ users.csv");
@@ -277,7 +277,7 @@ export default function AdminPanel() {
               </button>
               <button onClick={exportSuppliers} disabled={loading}
                 className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
-                <TbTruckDelivery  className="w-4 h-4 text-green-400" /> {t("nav_suppliers")}
+                <TbTruckDelivery className="w-4 h-4 text-green-400" /> {t("nav_suppliers")}
               </button>
               <button onClick={exportUsers} disabled={loading}
                 className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">

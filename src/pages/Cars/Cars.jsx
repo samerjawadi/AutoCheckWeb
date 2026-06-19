@@ -25,21 +25,25 @@ export default function Cars() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const reload = async () => {
-    setLoading(true);
+  const reload = async (showSpinner = false) => {
     const start = Date.now();
     try {
       setCars(await db.cars.getAll());
       setCustomers(await db.customers.getAll());
     } finally {
-      const delta = Date.now() - start;
-      const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
-      const wait = Math.max(0, minMs - delta);
-      setTimeout(() => setLoading(false), wait);
+      if (showSpinner) {
+        const delta = Date.now() - start;
+        const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
+        const wait = Math.max(0, minMs - delta);
+        setTimeout(() => setLoading(false), wait);
+      } else {
+        setLoading(false);
+      }
     }
   };
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(true); }, []);
 
   const customerName = (id) =>
     customers.find((c) => c.id === id)?.name ?? "Unknown";
@@ -79,10 +83,18 @@ export default function Cars() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (modal === "add") await db.cars.add(form);
-    else await db.cars.update(editId, form);
-    await reload();
-    close();
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      if (modal === "add") await db.cars.add(form);
+      else await db.cars.update(editId, form);
+      await reload();
+      close();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -216,9 +228,9 @@ export default function Cars() {
                 <textarea id="description" name="description" rows={2} value={form.description} onChange={handleChange} className={`${inputCls} resize-none`} placeholder={t("cars_desc_placeholder")} />
               </div>
               <div className="flex justify-end gap-3 pt-1">
-                <button type="button" onClick={close} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">{t("cancel")}</button>
-                <button type="submit" className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm rounded-lg transition-colors cursor-pointer">
-                  {modal === "add" ? t("cars_add") : t("save")}
+                <button type="button" onClick={close} disabled={submitting} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">{t("cancel")}</button>
+                <button type="submit" disabled={submitting} className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm rounded-lg transition-colors cursor-pointer">
+                  {submitting ? t("loading") : (modal === "add" ? t("cars_add") : t("save"))}
                 </button>
               </div>
             </form>

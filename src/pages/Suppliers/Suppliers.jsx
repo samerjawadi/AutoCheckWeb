@@ -41,20 +41,24 @@ export default function Suppliers() {
   const [form, setForm]           = useState(EMPTY);
   const [editId, setEditId]       = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const reload = async () => {
-    setLoading(true);
+  const reload = async (showSpinner = false) => {
     const start = Date.now();
     try {
       setSuppliers(await db.suppliers.getAll());
     } finally {
-      const delta = Date.now() - start;
-      const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
-      const wait = Math.max(0, minMs - delta);
-      setTimeout(() => setLoading(false), wait);
+      if (showSpinner) {
+        const delta = Date.now() - start;
+        const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
+        const wait = Math.max(0, minMs - delta);
+        setTimeout(() => setLoading(false), wait);
+      } else {
+        setLoading(false);
+      }
     }
   };
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(true); }, []);
 
   const openAdd    = () => { setForm(EMPTY); setModal("add"); };
   const openEdit   = (s) => { setForm({ name: s.name, type: s.type, phones: strToPhones(s.phone), notes: s.notes ?? "" }); setEditId(s.id); setModal("edit"); };
@@ -73,11 +77,19 @@ export default function Suppliers() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { ...form, phone: phonesToStr(form.phones) };
-    if (modal === "add") await db.suppliers.add(payload);
-    else await db.suppliers.update(editId, payload);
-    await reload();
-    close();
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const payload = { ...form, phone: phonesToStr(form.phones) };
+      if (modal === "add") await db.suppliers.add(payload);
+      else await db.suppliers.update(editId, payload);
+      await reload();
+      close();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -215,9 +227,9 @@ export default function Suppliers() {
               <textarea id="notes" name="notes" rows={2} value={form.notes} onChange={handleChange} className={`${inputCls} resize-none`} placeholder={t("notes")} />
             </div>
             <div className="flex justify-end gap-3 pt-1">
-              <button type="button" onClick={close} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">{t("cancel")}</button>
-              <button type="submit" className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm rounded-lg transition-colors cursor-pointer">
-                {modal === "add" ? t("suppliers_add") : t("save")}
+              <button type="button" onClick={close} disabled={submitting} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">{t("cancel")}</button>
+              <button type="submit" disabled={submitting} className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm rounded-lg transition-colors cursor-pointer">
+                {submitting ? t("loading") : (modal === "add" ? t("suppliers_add") : t("save"))}
               </button>
             </div>
           </form>
