@@ -14,8 +14,76 @@ const throwIfError = (error, context) => {
   }
 };
 
+const isMissingTableError = (error) => {
+  const code = String(error?.code ?? "");
+  const message = String(error?.message ?? "").toLowerCase();
+  return (
+    code === "42P01" ||
+    code.startsWith("PGRST") ||
+    message.includes("could not find the table") ||
+    message.includes("schema cache")
+  );
+};
+
+let isThemeSettingsTableAvailable = true;
+
 // ── CRUD ───────────────────────────────────────────────────────────────────
 export const db = {
+  themeSettings: {
+    getGlobal: async () => {
+      if (!isThemeSettingsTableAvailable) return null;
+
+      const { data, error } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "theme")
+        .maybeSingle();
+
+      if (error) {
+        if (isMissingTableError(error)) {
+          isThemeSettingsTableAvailable = false;
+          console.warn("[DB] app_settings table not found. Falling back to local theme only.");
+          return null;
+        }
+        throwIfError(error, "themeSettings.getGlobal");
+      }
+
+      return data?.value ?? null;
+    },
+
+    saveGlobal: async (theme) => {
+      if (!isThemeSettingsTableAvailable) return false;
+
+      const payload = {
+        dark: Boolean(theme?.dark),
+        accent: typeof theme?.accent === "string" ? theme.accent : "yellow",
+        accentLevel: Number.isFinite(Number(theme?.accentLevel)) ? Number(theme.accentLevel) : 666,
+      };
+
+      const { error } = await supabase
+        .from("app_settings")
+        .upsert(
+          {
+            key: "theme",
+            value: payload,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "key" }
+        );
+
+      if (error) {
+        if (isMissingTableError(error)) {
+          isThemeSettingsTableAvailable = false;
+          console.warn("[DB] app_settings table not found. Global theme update skipped.");
+          return false;
+        }
+        throwIfError(error, "themeSettings.saveGlobal");
+      }
+
+      return true;
+    },
+  },
+
   users: {
     getAll:   async ()       => { const { data, error } = await supabase.from("users").select("*").order("name"); throwIfError(error, "users.getAll"); return data ?? []; },
     getById:  async (id)     => { const { data, error } = await supabase.from("users").select("*").eq("id", id).maybeSingle(); throwIfError(error, "users.getById"); return data ?? null; },

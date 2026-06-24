@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { db } from "../services/localDB";
 
 const ThemeContext = createContext(null);
 
@@ -81,6 +82,31 @@ export function ThemeProvider({ children }) {
   const [accentLevel, setAccentLevel] = useState(() =>
     normalizeLevel(localStorage.getItem("ac_accent_level"))
   );
+  const [globalThemeReady, setGlobalThemeReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadGlobalTheme = async () => {
+      try {
+        const saved = await db.themeSettings.getGlobal();
+        if (!active || !saved) return;
+
+        if (typeof saved.dark === "boolean") setDark(saved.dark);
+        if (saved.accent !== undefined) setAccent(normalizeAccent(saved.accent));
+        if (saved.accentLevel !== undefined) setAccentLevel(normalizeLevel(saved.accentLevel));
+      } catch (error) {
+        console.warn("[Theme] Failed to load global theme:", error?.message ?? error);
+      } finally {
+        if (active) setGlobalThemeReady(true);
+      }
+    };
+
+    loadGlobalTheme();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -110,6 +136,16 @@ export function ThemeProvider({ children }) {
     localStorage.setItem("ac_accent", nextAccent);
     localStorage.setItem("ac_accent_level", String(nextLevel));
   }, [accent, accentLevel]);
+
+  useEffect(() => {
+    if (!globalThemeReady) return;
+
+    db.themeSettings
+      .saveGlobal({ dark, accent: normalizeAccent(accent), accentLevel: normalizeLevel(accentLevel) })
+      .catch((error) => {
+        console.warn("[Theme] Failed to save global theme:", error?.message ?? error);
+      });
+  }, [dark, accent, accentLevel, globalThemeReady]);
 
   return (
     <ThemeContext.Provider

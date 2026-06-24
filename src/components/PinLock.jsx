@@ -83,13 +83,13 @@ export default function PinLock({ children }) {
             autoComplete="off" data-lpignore="true" data-1p-ignore
             placeholder={fr ? "Nouveau code (min. 4)" : "New PIN (min. 4)"}
             value={setupPin} onChange={(e) => { setSetupPin(e.target.value); setSetupErr(""); }}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2 text-center text-base tracking-[0.12em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
           <input type="password" inputMode="numeric" maxLength={8}
             autoComplete="off" data-lpignore="true" data-1p-ignore
             placeholder={fr ? "Confirmer" : "Confirm PIN"}
             value={setupConfirm} onChange={(e) => { setSetupConfirm(e.target.value); setSetupErr(""); }}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2 text-center text-base tracking-[0.12em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
           {setupErr && <p className="text-sm text-red-400 -mt-4">{setupErr}</p>}
           <button type="submit"

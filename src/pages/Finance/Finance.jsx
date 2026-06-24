@@ -12,6 +12,10 @@ import PinLock, { revokeSession } from "../../components/PinLock";
 import { HiLockClosed, HiKey } from "react-icons/hi";
 
 const fmt = (n) => Number(n || 0).toLocaleString("fr-TN", { style: "currency", currency: "TND" });
+const ACCENT_300 = "var(--accent-300)";
+const ACCENT_400 = "var(--accent-400)";
+const ACCENT_500 = "var(--accent-500)";
+const ACCENT_600 = "var(--accent-600)";
 
 const TODAY       = new Date().toISOString().slice(0, 10);
 const WEEK_START  = (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay()); return d.toISOString().slice(0, 10); })();
@@ -129,7 +133,7 @@ export default function Finance() {
   // ── Payment breakdown pie ─────────────────────────────────────────────────
   const payPie = [
     { name: t("pay_paid"),    value: paidCount,    color: "#4ade80" },
-    { name: t("pay_partial"), value: partialCount, color: "#facc15" },
+    { name: t("pay_partial"), value: partialCount, color: ACCENT_400 },
     { name: t("pay_unpaid"),  value: unpaidCount,  color: "#f87171" },
   ].filter((d) => d.value > 0);
 
@@ -273,9 +277,9 @@ export default function Finance() {
                   <YAxis tick={{ fill: "#737373", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [fmt(v), name]} />
                   <Legend formatter={(v) => <span style={{ color: "#a3a3a3", fontSize: 11 }}>{v}</span>} />
-                  <Line type="monotone" dataKey="billed"    name={fr ? "Facturé" : "Billed"}    stroke="#facc15" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="billed"    name={fr ? "Facturé" : "Billed"}    stroke={ACCENT_400} strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="collected" name={fr ? "Encaissé" : "Collected"} stroke="#4ade80" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="balance"   name={fr ? "Impayé" : "Outstanding"} stroke="#f97316" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+                  <Line type="monotone" dataKey="balance"   name={fr ? "Impayé" : "Outstanding"} stroke={ACCENT_600} strokeWidth={2} dot={false} strokeDasharray="4 2" />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -344,11 +348,13 @@ export default function Finance() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between text-xs mb-0.5">
                         <span className="text-neutral-300 truncate">{s.name}</span>
-                        <span className="text-orange-400 font-mono shrink-0 ml-2">{fmt(s.spend)}</span>
+                        <span className="font-mono shrink-0 ml-2" style={{ color: ACCENT_500 }}>{fmt(s.spend)}</span>
                       </div>
                       <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-orange-500 rounded-full"
-                          style={{ width: `${Math.round((s.spend / supplierSpend[0].spend) * 100)}%` }} />
+                        <div className="h-full rounded-full"
+                          style={{ backgroundColor: ACCENT_500,
+                            width: `${Math.round((s.spend / supplierSpend[0].spend) * 100)}%` }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -367,7 +373,7 @@ export default function Finance() {
               <YAxis tick={{ fill: "#737373", fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [fmt(v), name]} />
               <Legend formatter={(v) => <span style={{ color: "#a3a3a3", fontSize: 11 }}>{v}</span>} />
-              <Bar dataKey="billed"    name={fr ? "Facturé" : "Billed"}    fill="#eab308" radius={[4,4,0,0]} />
+              <Bar dataKey="billed"    name={fr ? "Facturé" : "Billed"}    fill={ACCENT_500} radius={[4,4,0,0]} />
               <Bar dataKey="collected" name={fr ? "Encaissé" : "Collected"} fill="#4ade80" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>

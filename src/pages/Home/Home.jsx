@@ -18,6 +18,7 @@ const tStatus = (s, t) => {
 };
 
 const fmt = (n) => n.toLocaleString("fr-TN", { style: "currency", currency: "TND" });
+const ACCENT_500 = "var(--accent-500)";
 
 const STATUS_STYLE = {
   Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
@@ -198,7 +199,7 @@ export default function Home() {
                 contentStyle={{ background: "#171717", border: "1px solid #404040", borderRadius: 8, color: "#e5e5e5", fontSize: 12 }}
                 formatter={(v) => [v, t("nav_jobs")]}
               />
-              <Bar dataKey="count" fill="#eab308" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="count" fill={ACCENT_500} radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

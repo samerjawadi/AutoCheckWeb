@@ -235,7 +235,9 @@ export default function AdminPanel() {
               {fr ? "Thème" : "Theme"}
             </h2>
             <p className="text-xs text-neutral-500 mb-4">
-              {fr ? "Choisissez la couleur d'accent de l'interface." : "Choose the interface accent color."}
+              {fr
+                ? "Choisissez la couleur d'accent de l'interface. Les changements sont globaux pour tous les utilisateurs."
+                : "Choose the interface accent color. Changes are global for all users."}
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
               {accentOptions.map((opt) => {
