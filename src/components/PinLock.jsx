@@ -31,17 +31,16 @@ export default function PinLock({ children }) {
   const [setupErr, setSetupErr]     = useState("");
 
   // Change-PIN state
-  const [changing, setChanging]     = useState(false);
-  const [newPin, setNewPin]         = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
-  const [pinMsg, setPinMsg]         = useState("");
 
   // Lock whenever the route changes away from /finance
   useEffect(() => {
     if (!location.pathname.startsWith("/finance")) {
-      revokeSession();
-      setUnlocked(false);
-      setInput("");
+      const id = setTimeout(() => {
+        revokeSession();
+        setUnlocked(false);
+        setInput("");
+      }, 0);
+      return () => clearTimeout(id);
     }
   }, [location.pathname]);
 
@@ -67,25 +66,14 @@ export default function PinLock({ children }) {
     }
   };
 
-  const savePin = (e) => {
-    e.preventDefault();
-    if (newPin.length < 4)       return setPinMsg(fr ? "Minimum 4 chiffres" : "Minimum 4 digits");
-    if (newPin !== confirmPin)   return setPinMsg(fr ? "Les codes ne correspondent pas" : "PINs do not match");
-    setPin(newPin);
-    setNewPin(""); setConfirmPin("");
-    setChanging(false);
-    setPinMsg(fr ? "Code modifié ✓" : "PIN changed ✓");
-    setTimeout(() => setPinMsg(""), 3000);
-  };
-
   // First-time: no PIN set yet — show setup screen
   if (setting) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-neutral-950">
         <form onSubmit={setupSubmit}
           className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8 w-full max-w-xs flex flex-col items-center gap-6 shadow-2xl">
-          <div className="p-4 bg-violet-600/10 rounded-2xl">
-            <HiLockClosed className="w-8 h-8 text-violet-400" />
+          <div className="p-4 bg-yellow-500/10 rounded-2xl">
+            <HiLockClosed className="w-8 h-8 text-yellow-400" />
           </div>
           <div className="text-center">
             <h2 className="text-lg font-bold text-neutral-100">{fr ? "Créer un code PIN" : "Create a PIN"}</h2>
@@ -95,17 +83,17 @@ export default function PinLock({ children }) {
             autoComplete="off" data-lpignore="true" data-1p-ignore
             placeholder={fr ? "Nouveau code (min. 4)" : "New PIN (min. 4)"}
             value={setupPin} onChange={(e) => { setSetupPin(e.target.value); setSetupErr(""); }}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
           <input type="password" inputMode="numeric" maxLength={8}
             autoComplete="off" data-lpignore="true" data-1p-ignore
             placeholder={fr ? "Confirmer" : "Confirm PIN"}
             value={setupConfirm} onChange={(e) => { setSetupConfirm(e.target.value); setSetupErr(""); }}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
           {setupErr && <p className="text-sm text-red-400 -mt-4">{setupErr}</p>}
           <button type="submit"
-            className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors cursor-pointer">
+            className="w-full py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-medium rounded-xl transition-colors cursor-pointer">
             {fr ? "Créer et accéder" : "Create & Unlock"}
           </button>
         </form>
@@ -122,8 +110,8 @@ export default function PinLock({ children }) {
       <form onSubmit={unlock}
         className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 w-full max-w-xs flex flex-col items-center gap-4 shadow-2xl">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-violet-600/10 rounded-xl">
-            <HiLockClosed className="w-5 h-5 text-violet-400" />
+          <div className="p-2.5 bg-yellow-500/10 rounded-xl">
+            <HiLockClosed className="w-5 h-5 text-yellow-400" />
           </div>
           <div>
             <h2 className="text-sm font-bold text-neutral-100">{fr ? "Zone protégée" : "Protected Area"}</h2>
@@ -142,7 +130,7 @@ export default function PinLock({ children }) {
             data-1p-ignore
             value={input}
             onChange={(e) => { setInput(e.target.value); setError(""); }}
-            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-center text-xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-2.5 text-center text-xl tracking-[0.5em] text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
             placeholder="••••"
           />
         </div>
@@ -157,7 +145,7 @@ export default function PinLock({ children }) {
         {error && <p className="text-xs text-red-400 -mt-1">{error}</p>}
 
         <button type="submit"
-          className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer">
+          className="w-full py-2.5 bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer">
           {fr ? "Déverrouiller" : "Unlock"}
         </button>
       </form>

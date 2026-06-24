@@ -85,7 +85,7 @@ export default function Invoice() {
       <div className="fiche-no-print" style={{ padding: "16px 24px", background: "#111", display: "flex", justifyContent: "flex-end" }}>
         <button
           onClick={() => window.print()}
-          style={{ background: "#7c3aed", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+          style={{ background: "#ca8a04", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
         >
           🖨️ Imprimer / Enregistrer PDF
         </button>

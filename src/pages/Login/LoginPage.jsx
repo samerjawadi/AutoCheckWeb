@@ -21,7 +21,7 @@ export default function LoginPage() {
       setError(err.message ?? "Login failed");
     } finally {
       const delta = Date.now() - start;
-      const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
+      const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
       const wait = Math.max(0, minMs - delta);
       setTimeout(() => setLoading(false), wait);
     }
@@ -43,8 +43,8 @@ export default function LoginPage() {
 
         {/* Icon */}
         <div className="flex justify-center">
-          <div className="p-4 bg-violet-600/10 rounded-2xl">
-            <HiLockClosed className="w-8 h-8 text-violet-400" />
+          <div className="p-4 bg-yellow-500/10 rounded-2xl">
+            <HiLockClosed className="w-8 h-8 text-yellow-400" />
           </div>
         </div>
 
@@ -57,7 +57,7 @@ export default function LoginPage() {
             type="text" required autoFocus
             value={emailOrName} onChange={(e) => setEmailOrName(e.target.value)}
             placeholder="you@example.com or John Doe"
-            className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+            className="bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
           />
         </div>
 
@@ -69,7 +69,7 @@ export default function LoginPage() {
               type={showPw ? "text" : "password"} required
               value={password} onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm pr-10"
+              className="w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm pr-10"
             />
             <button type="button" onClick={() => setShowPw((s) => !s)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 cursor-pointer">
@@ -85,7 +85,7 @@ export default function LoginPage() {
         )}
 
         <button type="submit" disabled={loading}
-          className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors cursor-pointer">
+          className="w-full py-3 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors cursor-pointer">
           {loading ? "Connexion…" : "Se connecter"}
         </button>
       </form>

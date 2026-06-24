@@ -13,6 +13,24 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    rules: {
+      'react-hooks/set-state-in-effect': 'error',
+      'react-hooks/static-components': 'error',
+      'react-hooks/immutability': 'error',
+      'react-refresh/only-export-components': ['error', {
+        allowConstantExport: true,
+        allowExportNames: [
+          'useAuth',
+          'useLanguage',
+          'useTheme',
+          'revokeSession',
+          'applyFilters',
+          'TODAY',
+          'WEEK_START',
+          'MONTH_START',
+        ],
+      }],
+    },
     languageOptions: {
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },

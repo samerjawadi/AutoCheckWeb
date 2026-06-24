@@ -4,30 +4,30 @@ import { authService } from "../services/authService";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser]       = useState(undefined); // undefined = loading
+  const [user, setUser]       = useState(() => (localStorage.getItem("userId") ? undefined : null)); // undefined = loading
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     // Check if there's a logged-in user in localStorage
     const storedUserId = localStorage.getItem("userId");
-    if (storedUserId) {
-      authService.getUserById(storedUserId)
-        .then((userData) => {
-          if (userData) {
-            setUser(userData);
-            setProfile(userData);
-          } else {
-            localStorage.removeItem("userId");
-            setUser(null);
-          }
-        })
-        .catch(() => {
-          localStorage.removeItem("userId");
-          setUser(null);
-        });
-    } else {
-      setUser(null);
+    if (!storedUserId) {
+      return;
     }
+
+    authService.getUserById(storedUserId)
+      .then((userData) => {
+        if (userData) {
+          setUser(userData);
+          setProfile(userData);
+          return;
+        }
+        localStorage.removeItem("userId");
+        setUser(null);
+      })
+      .catch(() => {
+        localStorage.removeItem("userId");
+        setUser(null);
+      });
   }, []);
 
   const login = async (emailOrName, password) => {

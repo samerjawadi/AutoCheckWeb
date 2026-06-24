@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { HiArrowLeft, HiCheckCircle, HiClock, HiExclamationCircle } from "react-icons/hi";
-import { TbCar } from "react-icons/tb";
 import { db } from "../../services/localDB";
 import { calcTotal, calcPaid, calcBalance, payLabel } from "../../utils/finance";
 import { BrandLogo } from "../../components/BrandSelect";
@@ -25,14 +24,14 @@ const tPay = (s, t) => {
 const fmt = (n) => Number(n || 0).toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 
 const STATUS_STYLE = {
-  Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
   "In Progress": "bg-blue-500/10 text-blue-400 border border-blue-500/30",
   Done:          "bg-green-500/10 text-green-400 border border-green-500/30",
 };
 
 const PAY_STYLE = {
   Paid:    "bg-green-500/10 text-green-400 border border-green-500/30",
-  Partial: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  Partial: "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
   Unpaid:  "bg-red-500/10 text-red-400 border border-red-500/30",
 };
 
@@ -72,12 +71,12 @@ export default function CustomerHistory() {
       const totalBilled = jobs.reduce((s, j) => s + calcTotal(j.lines), 0);
       const totalBalance = totalBilled - totalSpent;
 
-      setData({ customer, jobs: enriched, cars, totalSpent, totalBilled, totalBalance });
+      setData({ customer, jobs: enriched, cars, totalSpent, totalBalance });
     };
     load();
   }, [customerId]);
   if (!data) return null;
-  const { customer, jobs, cars, totalSpent, totalBilled, totalBalance } = data;
+  const { customer, jobs, cars, totalSpent, totalBalance } = data;
 
   const filtered = applyFilters(jobs, { statusFilter, payFilter, dateFilter, dateFrom, dateTo });
 
@@ -104,7 +103,7 @@ export default function CustomerHistory() {
             <p className="text-xs text-neutral-500 mt-0.5">{t("nav_jobs")}</p>
           </div>
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-5 py-3 text-center">
-            <p className="text-xl font-bold text-violet-400">{cars.length}</p>
+            <p className="text-xl font-bold text-yellow-400">{cars.length}</p>
             <p className="text-xs text-neutral-500 mt-0.5">{t("nav_cars")}</p>
           </div>
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-5 py-3 text-center">
@@ -125,7 +124,7 @@ export default function CustomerHistory() {
           <div className="flex flex-wrap gap-3">
             {cars.map((car) => (
               <Link key={car.id} to={`/history/car/${car.id}`}
-                className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 hover:border-violet-500 rounded-xl px-4 py-2.5 text-sm transition-colors">
+                className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 hover:border-yellow-400 rounded-xl px-4 py-2.5 text-sm transition-colors">
                 <BrandLogo manufacturer={car.manufacturer} size={20} />
                 <span className="font-medium text-neutral-100">{car.manufacturer} {car.model}</span>
                 <span className="font-mono text-xs text-neutral-500">{car.plate}</span>
@@ -154,7 +153,6 @@ export default function CustomerHistory() {
       <div className="flex flex-col gap-3">
         {filtered.map((job) => {
           const total   = calcTotal(job.lines);
-          const paid    = calcPaid(job.payments);
           const balance = calcBalance(job.lines, job.payments);
           const label   = payLabel(job.lines, job.payments);
           const open    = expanded[job.id];

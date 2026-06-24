@@ -14,7 +14,7 @@ const phonesToStr = (phones) => phones.filter(Boolean).join(" / ");
 const strToPhones = (str) => str ? str.split(" / ").map(s => s.trim()).filter(Boolean) : [""];
 
 const inputCls =
-  "w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm";
+  "w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm";
 
 const labelCls = "block text-xs font-medium text-neutral-400 mb-1";
 
@@ -28,25 +28,26 @@ export default function Customers() {
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  const reload = async (showSpinner = false) => {
+  const reload = async () => {
+    setLoading(true);
     const start = Date.now();
     try {
       setCustomers(await db.customers.getAll());
       setAllCars(await db.cars.getAll());
     } finally {
-      if (showSpinner) {
-        const delta = Date.now() - start;
-        const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
-        const wait = Math.max(0, minMs - delta);
-        setTimeout(() => setLoading(false), wait);
-      } else {
-        setLoading(false);
-      }
+      const delta = Date.now() - start;
+      const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
+      const wait = Math.max(0, minMs - delta);
+      setTimeout(() => setLoading(false), wait);
     }
   };
-  useEffect(() => { reload(true); }, []);
+  useEffect(() => {
+    const id = setTimeout(() => { reload(); }, 0);
+    return () => clearTimeout(id);
+  }, []);
 
   const openAdd = () => {
     setForm(EMPTY);
@@ -68,6 +69,8 @@ export default function Customers() {
     setModal(null);
     setDeleteTarget(null);
     setEditId(null);
+    setSaving(false);
+    setDeleting(false);
   };
 
   const handleChange = (e) =>
@@ -82,25 +85,33 @@ export default function Customers() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
+    if (saving) return;
+    setSaving(true);
+    const payload = { ...form, phone: phonesToStr(form.phones) };
     try {
-      const payload = { ...form, phone: phonesToStr(form.phones) };
-      if (modal === "add") await db.customers.add(payload);
-      else await db.customers.update(editId, payload);
-      await reload();
+      if (modal === "add") {
+        const created = await db.customers.add(payload);
+        setCustomers((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      } else {
+        await db.customers.update(editId, payload);
+        setCustomers((prev) => prev.map((c) => (c.id === editId ? { ...c, ...payload } : c)));
+      }
       close();
-    } catch (err) {
-      console.error(err);
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    await db.customers.delete(deleteTarget.id);
-    await reload();
-    close();
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    try {
+      await db.customers.delete(deleteTarget.id);
+      setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+      close();
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const filtered = customers.filter(
@@ -118,7 +129,7 @@ export default function Customers() {
           <h1 className="text-2xl font-bold text-neutral-100">{t("customers_title")}</h1>
           <p className="text-sm text-neutral-500 mt-0.5">{customers.length} total</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+        <button onClick={openAdd} className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
           <HiPlus className="w-4 h-4" /> {t("customers_add")}
         </button>
       </div>
@@ -176,7 +187,7 @@ export default function Customers() {
                         className="p-1.5 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors" title="View history">
                         <TbHistory className="w-4 h-4" />
                       </Link>
-                      <button onClick={() => openEdit(c)} className="p-1.5 text-neutral-400 hover:text-violet-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("edit")}>
+                      <button onClick={() => openEdit(c)} className="p-1.5 text-neutral-400 hover:text-yellow-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("edit")}>
                         <HiPencil className="w-4 h-4" />
                       </button>
                       <button onClick={() => openDelete(c)} className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("delete")}>
@@ -202,7 +213,7 @@ export default function Customers() {
               <div className="flex items-center justify-between mb-1">
                 <label className={labelCls}>{t("phone")}</label>
                 <button type="button" onClick={addPhone}
-                  className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors cursor-pointer">
+                  className="flex items-center gap-1 text-xs text-yellow-400 hover:text-yellow-400 transition-colors cursor-pointer">
                   <HiPlus className="w-3.5 h-3.5" /> Add number
                 </button>
               </div>
@@ -230,9 +241,10 @@ export default function Customers() {
               <input id="email" name="email" type="email" value={form.email} onChange={handleChange} className={inputCls} placeholder={t("optional")} />
             </div>
             <div className="flex justify-end gap-3 pt-1">
-              <button type="button" onClick={close} disabled={submitting} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">{t("cancel")}</button>
-              <button type="submit" disabled={submitting} className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-sm rounded-lg transition-colors cursor-pointer">
-                {submitting ? t("loading") : (modal === "add" ? t("customers_add") : t("save"))}
+              <button type="button" onClick={close} disabled={saving} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{t("cancel")}</button>
+              <button type="submit" disabled={saving} className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded-lg transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                {saving && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
+                {modal === "add" ? t("customers_add") : t("save")}
               </button>
             </div>
           </form>
@@ -247,8 +259,11 @@ export default function Customers() {
             {t("customers_delete_msg", { name: "" }).split(deleteTarget.name)[1]}
           </p>
           <div className="flex justify-end gap-3 mt-5">
-            <button onClick={close} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">{t("cancel")}</button>
-            <button onClick={handleDelete} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors cursor-pointer">{t("delete")}</button>
+            <button onClick={close} disabled={deleting} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{t("cancel")}</button>
+            <button onClick={handleDelete} disabled={deleting} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
+              {deleting && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
+              {t("delete")}
+            </button>
           </div>
         </Modal>
       )}

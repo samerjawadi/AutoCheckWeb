@@ -3,7 +3,7 @@ import { TbCar } from "react-icons/tb";
 import { CAR_BRANDS } from "../utils/carBrands";
 
 const inputCls =
-  "w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm";
+  "w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm";
 
 export function BrandLogo({ manufacturer, size = 20, className = "" }) {
   const [err, setErr] = useState(false);
@@ -29,12 +29,9 @@ export function BrandLogo({ manufacturer, size = 20, className = "" }) {
 }
 
 export default function BrandSelect({ value, onChange, placeholder = "Search manufacturer..." }) {
-  const [query, setQuery] = useState(value ?? "");
   const [open, setOpen]   = useState(false);
   const ref               = useRef(null);
-
-  // Sync when value changes externally (e.g. form reset)
-  useEffect(() => { setQuery(value ?? ""); }, [value]);
+  const query = value ?? "";
 
   // Close on outside click
   useEffect(() => {
@@ -48,13 +45,11 @@ export default function BrandSelect({ value, onChange, placeholder = "Search man
   );
 
   const select = (brand) => {
-    setQuery(brand.name);
     onChange(brand.name);
     setOpen(false);
   };
 
   const handleInput = (e) => {
-    setQuery(e.target.value);
     onChange(e.target.value);
     setOpen(true);
   };
@@ -85,14 +80,7 @@ export default function BrandSelect({ value, onChange, placeholder = "Search man
                 onClick={() => select(brand)}
                 className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-700 transition-colors cursor-pointer"
               >
-                <img
-                  src={brand.logo}
-                  alt={brand.name}
-                  width={20}
-                  height={20}
-                  className="object-contain shrink-0"
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
-                />
+                <BrandLogo manufacturer={brand.name} size={20} className="shrink-0" />
                 {brand.name}
               </button>
             </li>

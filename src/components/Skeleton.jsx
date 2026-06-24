@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function Skeleton({ size = "card", height }) {
   if (size === "small") {
     return <div className="skeleton skeleton--small" />;

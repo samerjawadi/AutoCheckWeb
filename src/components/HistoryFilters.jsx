@@ -3,12 +3,12 @@
 const STATUS_OPTIONS = ["Pending", "In Progress", "Done"];
 const PAY_OPTIONS    = ["Paid", "Partial", "Unpaid"];
 
-const inputCls = "bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1.5 text-neutral-100 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer";
+const inputCls = "bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1.5 text-neutral-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-400 cursor-pointer";
 
 const pillCls = (active, color = "violet") =>
   `px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
     active
-      ? color === "orange" ? "bg-orange-600 text-white" : "bg-violet-600 text-white"
+      ? color === "orange" ? "bg-orange-600 text-white" : "bg-yellow-600 text-white"
       : "bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700"
   }`;
 

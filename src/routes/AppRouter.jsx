@@ -22,7 +22,7 @@ function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-neutral-950">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
         <p className="text-xs text-neutral-500">Chargement…</p>
       </div>
     </div>

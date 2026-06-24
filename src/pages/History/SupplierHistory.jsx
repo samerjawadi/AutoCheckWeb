@@ -10,14 +10,14 @@ import HistoryFilters, { applyFilters } from "../../components/HistoryFilters";
 const fmt = (n) => Number(n || 0).toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 
 const STATUS_STYLE = {
-  Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
   "In Progress": "bg-blue-500/10 text-blue-400 border border-blue-500/30",
   Done:          "bg-green-500/10 text-green-400 border border-green-500/30",
 };
 
 const PAY_STYLE = {
   Paid:    "bg-green-500/10 text-green-400 border border-green-500/30",
-  Partial: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  Partial: "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
   Unpaid:  "bg-red-500/10 text-red-400 border border-red-500/30",
 };
 
@@ -42,7 +42,7 @@ const tPay = (s, t) => {
 };
 
 const TYPE_STYLE = {
-  Internal:         "bg-violet-500/10 text-violet-400 border border-violet-500/30",
+  Internal:         "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
   "Parts Supplier": "bg-blue-500/10 text-blue-400 border border-blue-500/30",
   "Body Shop":      "bg-orange-500/10 text-orange-400 border border-orange-500/30",
   Other:            "bg-neutral-500/10 text-neutral-400 border border-neutral-600",
@@ -146,7 +146,7 @@ export default function SupplierHistory() {
             <p className="text-xs text-neutral-500 mt-0.5">{t("nav_jobs")}</p>
           </div>
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-5 py-3 text-center">
-            <p className="text-xl font-bold text-violet-400">{lineCount}</p>
+            <p className="text-xl font-bold text-yellow-400">{lineCount}</p>
             <p className="text-xs text-neutral-500 mt-0.5">{t("jobs_lines")}</p>
           </div>
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-5 py-3 text-center">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line,
@@ -7,7 +7,6 @@ import {
 import { db } from "../../services/localDB";
 import { calcTotal, calcPaid } from "../../utils/finance";
 import { useLanguage } from "../../context/LanguageContext";
-import LoadingState from "../../components/LoadingState";
 import Skeleton from "../../components/Skeleton";
 import PinLock, { revokeSession } from "../../components/PinLock";
 import { HiLockClosed, HiKey } from "react-icons/hi";
@@ -75,7 +74,7 @@ export default function Finance() {
         setData({ jobs, customers, cars, suppliers });
       } finally {
         const delta = Date.now() - start;
-        const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
+        const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
         const wait = Math.max(0, minMs - delta);
         setTimeout(() => setLoading(false), wait);
       }
@@ -186,7 +185,7 @@ export default function Finance() {
               {PERIODS.map(({ key, label }) => (
                 <button key={key} onClick={() => setPeriod(key)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                    period === key ? "bg-violet-600 text-white" : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                    period === key ? "bg-yellow-600 text-white" : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                   }`}>
                   {label}
                 </button>
@@ -199,11 +198,11 @@ export default function Finance() {
                 <input type="password" inputMode="numeric" maxLength={8} autoFocus
                   placeholder={fr ? "Nouveau code" : "New PIN"}
                   value={newPin} onChange={(e) => setNewPin(e.target.value)}
-                  className="w-24 bg-neutral-800 rounded-lg px-2 py-1 text-xs text-neutral-100 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                  className="w-24 bg-neutral-800 rounded-lg px-2 py-1 text-xs text-neutral-100 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-yellow-400" />
                 <input type="password" inputMode="numeric" maxLength={8}
                   placeholder={fr ? "Confirmer" : "Confirm"}
                   value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)}
-                  className="w-24 bg-neutral-800 rounded-lg px-2 py-1 text-xs text-neutral-100 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-violet-500" />
+                  className="w-24 bg-neutral-800 rounded-lg px-2 py-1 text-xs text-neutral-100 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-yellow-400" />
                 <button onClick={() => {
                   if (newPin.length < 4) { setPinMsg(fr ? "Min 4 chiffres" : "Min 4 digits"); return; }
                   if (newPin !== confirmPin) { setPinMsg(fr ? "Codes différents" : "PINs don't match"); return; }
@@ -242,7 +241,7 @@ export default function Finance() {
                 <StatCard label={fr ? "Chiffre d'affaires" : "Total Billed"} value={loading ? <Skeleton size="small" /> : fmt(totalBilled)} color="text-neutral-100" />
                 <StatCard label={fr ? "Encaissé" : "Collected"} value={loading ? <Skeleton size="small" /> : fmt(totalPaid)} color="text-green-400" />
                 <StatCard label={fr ? "Solde restant" : "Outstanding"} value={loading ? <Skeleton size="small" /> : fmt(Math.max(0, totalBalance))} color={totalBalance > 0 ? "text-orange-400" : "text-green-400"} />
-                <StatCard label={fr ? "Panier moyen" : "Avg Job Value"} value={loading ? <Skeleton size="small" /> : fmt(avgJob)} sub={loading ? undefined : `${scoped.length} ${t("nav_jobs").toLowerCase()}`} color="text-violet-400" />
+                <StatCard label={fr ? "Panier moyen" : "Avg Job Value"} value={loading ? <Skeleton size="small" /> : fmt(avgJob)} sub={loading ? undefined : `${scoped.length} ${t("nav_jobs").toLowerCase()}`} color="text-yellow-400" />
               </div>
 
         {/* Payment status cards */}
@@ -251,7 +250,7 @@ export default function Finance() {
             <p className="text-3xl font-bold text-green-400">{loading ? <Skeleton size="small" /> : paidCount}</p>
             <p className="text-xs text-neutral-400 mt-1">{t("pay_paid")}</p>
           </div>
-          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-5 text-center">
+          <div className="bg-yellow-500/5 border border-yellow-400/20 rounded-xl p-5 text-center">
             <p className="text-3xl font-bold text-yellow-400">{loading ? <Skeleton size="small" /> : partialCount}</p>
             <p className="text-xs text-neutral-400 mt-1">{t("pay_partial")}</p>
           </div>
@@ -274,7 +273,7 @@ export default function Finance() {
                   <YAxis tick={{ fill: "#737373", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [fmt(v), name]} />
                   <Legend formatter={(v) => <span style={{ color: "#a3a3a3", fontSize: 11 }}>{v}</span>} />
-                  <Line type="monotone" dataKey="billed"    name={fr ? "Facturé" : "Billed"}    stroke="#a78bfa" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="billed"    name={fr ? "Facturé" : "Billed"}    stroke="#facc15" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="collected" name={fr ? "Encaissé" : "Collected"} stroke="#4ade80" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="balance"   name={fr ? "Impayé" : "Outstanding"} stroke="#f97316" strokeWidth={2} dot={false} strokeDasharray="4 2" />
                 </LineChart>
@@ -368,7 +367,7 @@ export default function Finance() {
               <YAxis tick={{ fill: "#737373", fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [fmt(v), name]} />
               <Legend formatter={(v) => <span style={{ color: "#a3a3a3", fontSize: 11 }}>{v}</span>} />
-              <Bar dataKey="billed"    name={fr ? "Facturé" : "Billed"}    fill="#8b5cf6" radius={[4,4,0,0]} />
+              <Bar dataKey="billed"    name={fr ? "Facturé" : "Billed"}    fill="#eab308" radius={[4,4,0,0]} />
               <Bar dataKey="collected" name={fr ? "Encaissé" : "Collected"} fill="#4ade80" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>

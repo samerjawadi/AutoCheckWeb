@@ -1,5 +1,69 @@
 @import "tailwindcss";
 
+:root {
+  --accent-300: #fde047;
+  --accent-400: #facc15;
+  --accent-500: #eab308;
+  --accent-600: #ca8a04;
+  --accent-rgb: 234, 179, 8;
+}
+
+:root[data-accent="amber"] {
+  --accent-300: #fcd34d;
+  --accent-400: #fbbf24;
+  --accent-500: #f59e0b;
+  --accent-600: #d97706;
+  --accent-rgb: 245, 158, 11;
+}
+
+:root[data-accent="orange"] {
+  --accent-300: #fdba74;
+  --accent-400: #fb923c;
+  --accent-500: #f97316;
+  --accent-600: #ea580c;
+  --accent-rgb: 249, 115, 22;
+}
+
+:root[data-accent="emerald"] {
+  --accent-300: #6ee7b7;
+  --accent-400: #34d399;
+  --accent-500: #10b981;
+  --accent-600: #059669;
+  --accent-rgb: 16, 185, 129;
+}
+
+:root[data-accent="sky"] {
+  --accent-300: #7dd3fc;
+  --accent-400: #38bdf8;
+  --accent-500: #0ea5e9;
+  --accent-600: #0284c7;
+  --accent-rgb: 14, 165, 233;
+}
+
+/* Global accent remap for existing Tailwind utility classes in the app. */
+.text-yellow-300 { color: var(--accent-300) !important; }
+.text-yellow-400 { color: var(--accent-400) !important; }
+.text-yellow-500 { color: var(--accent-500) !important; }
+
+.bg-yellow-500 { background-color: var(--accent-500) !important; }
+.bg-yellow-600 { background-color: var(--accent-600) !important; }
+.bg-yellow-500\/5 { background-color: color-mix(in oklab, var(--accent-500) 5%, transparent) !important; }
+.bg-yellow-500\/10 { background-color: color-mix(in oklab, var(--accent-500) 10%, transparent) !important; }
+.bg-yellow-600\/10 { background-color: color-mix(in oklab, var(--accent-600) 10%, transparent) !important; }
+
+.border-yellow-400 { border-color: var(--accent-400) !important; }
+.border-yellow-500 { border-color: var(--accent-500) !important; }
+.border-yellow-500\/20 { border-color: color-mix(in oklab, var(--accent-500) 20%, transparent) !important; }
+.border-yellow-500\/30 { border-color: color-mix(in oklab, var(--accent-500) 30%, transparent) !important; }
+
+.hover\:text-yellow-300:hover { color: var(--accent-300) !important; }
+.hover\:text-yellow-400:hover { color: var(--accent-400) !important; }
+.hover\:bg-yellow-500:hover { background-color: var(--accent-500) !important; }
+
+.focus\:ring-yellow-400:focus {
+  --tw-ring-color: var(--accent-400) !important;
+}
+
 html {
   color-scheme: dark;
   overflow-x: hidden;

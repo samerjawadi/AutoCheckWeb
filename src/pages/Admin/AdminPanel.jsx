@@ -1,57 +1,31 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { HiDownload, HiDatabase, HiCheckCircle, HiUsers, HiUser, HiTrash, HiPencil } from "react-icons/hi";
 import { TbCar, TbTool, TbTruckDelivery } from "react-icons/tb";
 import { db } from "../../services/localDB";
 import { authService } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { useTheme } from "../../context/ThemeContext";
 import Modal from "../../components/Modal";
-
-const fmt = (n) => Number(n || 0).toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 
 function downloadJSON(data, filename) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-}
-
-function escapeSQLValue(value) {
-  if (value === null || value === undefined) return "NULL";
-  if (typeof value === "number" || typeof value === "bigint") return String(value);
-  if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
-  if (Array.isArray(value) || typeof value === "object") {
-    return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
-  }
-  return `'${String(value).replace(/'/g, "''")}'`;
-}
-
-function toSQLInsert(table, rows) {
-  if (!rows.length) return "";
-  const columns = Object.keys(rows[0]);
-  const values = rows.map((row) => `(${columns.map((col) => escapeSQLValue(row[col])).join(", ")})`);
-  return `\nINSERT INTO ${table} (${columns.join(", ")}) VALUES\n${values.join(",\n")};&#10;`;
-}
-
-function downloadSQL(sql, filename) {
-  const blob = new Blob([sql], { type: "application/sql;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
 
 function toCSV(rows, cols) {
   const header = cols.join(",");
-  const lines = rows.map((r) => cols.map((c) => `"${String(r[c] ?? "").replace(/"/g, '""')}"`).join(","));
+  const lines  = rows.map((r) => cols.map((c) => `"${String(r[c] ?? "").replace(/"/g, '""')}"`).join(","));
   return [header, ...lines].join("\n");
 }
 
 function downloadCSV(csv, filename) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
 }
@@ -59,10 +33,11 @@ function downloadCSV(csv, filename) {
 export default function AdminPanel() {
   const { profile } = useAuth();
   const { t, lang } = useLanguage();
+  const { accent, setAccent, accentLevel, setAccentLevel, accentOptions, accentLevels } = useTheme();
   const fr = lang === "fr";
   const [activeTab, setActiveTab] = useState("db");
   const [status, setStatus] = useState("");
-  const [users, setUsers] = useState([]);
+  const [users, setUsers]   = useState([]);
   const [newUser, setNewUser] = useState({ email: "", password: "", name: "", role: "user" });
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
@@ -70,7 +45,7 @@ export default function AdminPanel() {
   const [editTarget, setEditTarget] = useState(null);
   const [editForm, setEditForm] = useState({ name: "", email: "", password: "" });
 
-  const withStatus = async (fn, msg) => {
+  const withStatus = useCallback(async (fn, msg) => {
     setLoading(true);
     const start = Date.now();
     setStatus("");
@@ -78,21 +53,28 @@ export default function AdminPanel() {
     catch (e) { setStatus("❌ " + e.message); }
     finally {
       const delta = Date.now() - start;
-      const minMs = (typeof process !== "undefined" && process.env && process.env.NODE_ENV === "test") ? 0 : 1000;
+      const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
       const wait = Math.max(0, minMs - delta);
       setTimeout(() => { setLoading(false); setTimeout(() => setStatus(""), 4000); }, wait);
     }
-  };
+  }, []);
+
+  const loadUsers = useCallback(() => withStatus(async () => {
+    const users = await authService.getAllUsers();
+    setUsers(users);
+  }, ""), [withStatus]);
 
   useEffect(() => {
     if (activeTab === "users") {
-      loadUsers();
+      const id = setTimeout(() => { loadUsers(); }, 0);
+      return () => clearTimeout(id);
     }
-  }, [activeTab]);
+  }, [activeTab, loadUsers]);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    const id = setTimeout(() => { loadUsers(); }, 0);
+    return () => clearTimeout(id);
+  }, [loadUsers]);
 
   const backupAll = () => withStatus(async () => {
     const [customers, cars, jobs, suppliers, users] = await Promise.all([
@@ -102,10 +84,6 @@ export default function AdminPanel() {
     const date = new Date().toISOString().slice(0, 10);
     downloadJSON({ customers, cars, jobs, suppliers, users, exportedAt: new Date().toISOString() }, `autocheck-backup-${date}.json`);
   }, fr ? "✅ Sauvegarde téléchargée" : "✅ Backup downloaded");
-
-  const exportSQL = () => withStatus(async () => {
-    // SQL export disabled for now.
-  }, fr ? "✅ SQL export disabled" : "✅ SQL export disabled");
 
   const exportCustomers = () => withStatus(async () => {
     const rows = await db.customers.getAll();
@@ -129,21 +107,15 @@ export default function AdminPanel() {
     downloadCSV(toCSV(flat, ["id", "customerId", "carId", "dateIn", "dateOut", "status", "notes", "totalLines", "totalAmount", "totalPaid"]), "jobs.csv");
   }, "✅ jobs.csv");
 
-  const exportSuppliers = () => withStatus(async () => {
+    const exportSuppliers = () => withStatus(async () => {
     const rows = await db.suppliers.getAll();
     downloadCSV(toCSV(rows, ["id", "name", "phone", "email"]), "suppliers.csv");
   }, "✅ suppliers.csv");
 
-  const exportUsers = () => withStatus(async () => {
+    const exportUsers = () => withStatus(async () => {
     const rows = await db.users.getAll();
     downloadCSV(toCSV(rows, ["id", "name", "email", "role"]), "users.csv");
   }, "✅ users.csv");
-
-
-  const loadUsers = () => withStatus(async () => {
-    const users = await authService.getAllUsers();
-    setUsers(users);
-  }, "");
 
   const changeRole = async (userId, newRole) => {
     const error = await authService.updateUser(userId, { role: newRole });
@@ -246,7 +218,7 @@ export default function AdminPanel() {
             </h2>
             <div className="flex flex-wrap gap-3">
               <button onClick={backupAll} disabled={loading}
-                className="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer">
+                className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer">
                 <HiDownload className="w-4 h-4" />
                 {fr ? "Exporter toutes les données (JSON)" : "Export all data (JSON)"}
               </button>
@@ -258,6 +230,61 @@ export default function AdminPanel() {
             </div>
           </div>
 
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-6">
+            <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4">
+              {fr ? "Thème" : "Theme"}
+            </h2>
+            <p className="text-xs text-neutral-500 mb-4">
+              {fr ? "Choisissez la couleur d'accent de l'interface." : "Choose the interface accent color."}
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+              {accentOptions.map((opt) => {
+                const active = accent === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setAccent(opt.id)}
+                    className={`rounded-xl border px-3 py-2 text-xs font-medium transition-colors cursor-pointer ${
+                      active
+                        ? "border-neutral-500 bg-neutral-800 text-white"
+                        : "border-neutral-700 bg-neutral-900 text-neutral-300 hover:border-neutral-600"
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: opt.swatch }} />
+                      {opt.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-5 border-t border-neutral-800 pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-neutral-400">
+                  {fr ? "Intensité de la teinte" : "Shade intensity"}
+                </span>
+                <span className="text-xs font-semibold text-neutral-200">{accentLevel}</span>
+              </div>
+
+              <input
+                type="range"
+                min={0}
+                max={1000}
+                step={10}
+                value={accentLevel}
+                onChange={(e) => setAccentLevel(Number(e.target.value))}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-neutral-800"
+              />
+
+              <div className="mt-2 flex justify-between text-[11px] text-neutral-500">
+                {accentLevels.map((level) => (
+                  <span key={level}>{level}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
             <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4 flex items-center gap-2">
               <HiDownload className="w-4 h-4" /> {fr ? "Exporter en CSV" : "Export as CSV"}
@@ -265,7 +292,7 @@ export default function AdminPanel() {
             <div className="flex flex-wrap gap-3">
               <button onClick={exportCustomers} disabled={loading}
                 className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
-                <HiUsers className="w-4 h-4 text-violet-400" /> {t("nav_customers")}
+                <HiUsers className="w-4 h-4 text-yellow-400" /> {t("nav_customers")}
               </button>
               <button onClick={exportCars} disabled={loading}
                 className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
@@ -277,7 +304,7 @@ export default function AdminPanel() {
               </button>
               <button onClick={exportSuppliers} disabled={loading}
                 className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
-                <TbTruckDelivery className="w-4 h-4 text-green-400" /> {t("nav_suppliers")}
+                <TbTruckDelivery  className="w-4 h-4 text-green-400" /> {t("nav_suppliers")}
               </button>
               <button onClick={exportUsers} disabled={loading}
                 className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
@@ -302,7 +329,7 @@ export default function AdminPanel() {
                   type="text"
                   value={newUser.name}
                   onChange={(e) => setNewUser((prev) => ({ ...prev, name: e.target.value }))}
-                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
                   placeholder={fr ? "Nom complet" : "Full name"}
                 />
               </label>
@@ -313,7 +340,7 @@ export default function AdminPanel() {
                   type="email"
                   value={newUser.email}
                   onChange={(e) => setNewUser((prev) => ({ ...prev, email: e.target.value }))}
-                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
                   placeholder="you@example.com"
                 />
               </label>
@@ -324,7 +351,7 @@ export default function AdminPanel() {
                   type="password"
                   value={newUser.password}
                   onChange={(e) => setNewUser((prev) => ({ ...prev, password: e.target.value }))}
-                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
                   placeholder="••••••••"
                 />
               </label>
@@ -334,7 +361,7 @@ export default function AdminPanel() {
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser((prev) => ({ ...prev, role: e.target.value }))}
-                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                  className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
                 >
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
@@ -345,7 +372,7 @@ export default function AdminPanel() {
             <button
               onClick={addUser}
               disabled={loading}
-              className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white px-5 py-3 rounded-xl text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white px-5 py-3 rounded-xl text-sm font-medium transition-colors"
             >
               <HiCheckCircle className="w-4 h-4" />
               {fr ? "Ajouter l'utilisateur" : "Add user"}
@@ -376,7 +403,7 @@ export default function AdminPanel() {
                         value={u.role}
                         onChange={(e) => changeRole(u.id, e.target.value)}
                         disabled={u.id === profile?.id}
-                        className="bg-neutral-700 border border-neutral-600 rounded-lg px-2 py-1.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50 cursor-pointer"
+                        className="bg-neutral-700 border border-neutral-600 rounded-lg px-2 py-1.5 text-xs text-neutral-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-50 cursor-pointer"
                       >
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
@@ -384,7 +411,7 @@ export default function AdminPanel() {
                       <button
                         onClick={() => openEditUser(u)}
                         disabled={u.id === profile?.id}
-                        className="p-1.5 text-neutral-400 hover:text-violet-300 hover:bg-neutral-700 rounded transition-colors cursor-pointer disabled:opacity-50"
+                        className="p-1.5 text-neutral-400 hover:text-yellow-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer disabled:opacity-50"
                         title={fr ? "Modifier" : "Edit"}
                       >
                         <HiPencil className="w-4 h-4" />
@@ -427,7 +454,7 @@ export default function AdminPanel() {
                 type="text"
                 value={editForm.name}
                 onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
-                className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
               />
             </label>
 
@@ -437,7 +464,7 @@ export default function AdminPanel() {
                 type="email"
                 value={editForm.email}
                 onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
-                className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
               />
             </label>
 
@@ -447,7 +474,7 @@ export default function AdminPanel() {
                 type="password"
                 value={editForm.password}
                 onChange={(e) => setEditForm((prev) => ({ ...prev, password: e.target.value }))}
-                className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                className="mt-2 w-full bg-neutral-800 border border-neutral-700 rounded-xl px-4 py-3 text-neutral-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm"
                 placeholder={fr ? "Laissez vide pour conserver" : "Leave blank to keep current"}
               />
             </label>
@@ -456,7 +483,7 @@ export default function AdminPanel() {
               <button onClick={closeModal} className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer">{fr ? "Annuler" : "Cancel"}</button>
               <button onClick={async () => {
                 await withStatus(handleSaveEdit, fr ? "✅ Utilisateur mis à jour" : "✅ User updated");
-              }} className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm rounded-lg transition-colors cursor-pointer">{fr ? "Enregistrer" : "Save"}</button>
+              }} className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded-lg transition-colors cursor-pointer">{fr ? "Enregistrer" : "Save"}</button>
             </div>
           </div>
         </Modal>

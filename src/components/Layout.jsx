@@ -3,7 +3,6 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { HiHome, HiMenu, HiUsers, HiX, HiLogout, HiShieldCheck } from "react-icons/hi";
 import { TbLayoutSidebarLeftCollapse, TbCar, TbTool, TbBuildingStore, TbChartBar } from "react-icons/tb";
 import { useLanguage } from "../context/LanguageContext";
-import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 
 const navLinks = [
@@ -16,22 +15,19 @@ const navLinks = [
 ];
 
 export default function Layout() {
-  const [expanded, setExpanded]   = useState(true);
+  const [expanded, setExpanded]   = useState(() => (typeof window !== "undefined" ? window.innerWidth >= 768 : true));
   const [mobileOpen, setMobile]   = useState(false);
   const { lang, setLanguage, t }  = useLanguage();
-  const { dark, toggle }          = useTheme();
   const { user, profile, isAdmin, logout } = useAuth();
   const location                  = useLocation();
 
   // Close mobile menu on route change
-  useEffect(() => { setMobile(false); }, [location.pathname]);
-
-  // Detect mobile (< 768px) and default sidebar to collapsed
   useEffect(() => {
-    if (window.innerWidth < 768) setExpanded(false);
-  }, []);
+    const id = setTimeout(() => setMobile(false), 0);
+    return () => clearTimeout(id);
+  }, [location.pathname]);
 
-  const NavContent = ({ onNav }) => (
+  const renderNavContent = (onNav) => (
     <>
       <nav className={`flex flex-col gap-1 p-2 mt-2 flex-1 ${expanded ? "items-start" : "items-center"}`}>
         {navLinks.map(({ to, labelKey, icon: Icon, end }) => (
@@ -43,7 +39,7 @@ export default function Layout() {
                 expanded || mobileOpen ? "gap-3 px-3" : "justify-center px-0"
               } py-2.5 ${
                 isActive
-                  ? "bg-violet-600 text-white shadow-[0_0_12px_rgba(124,58,237,0.4)]"
+                  ? "bg-yellow-600 text-white shadow-[0_0_12px_rgba(234,179,8,0.4)]"
                   : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
               }`
             }
@@ -82,20 +78,20 @@ export default function Layout() {
         {user && (
           expanded || mobileOpen ? (
             <div className="flex items-center gap-2 px-2 py-1.5">
-              <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+              <div className="w-7 h-7 rounded-full bg-yellow-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
                 {(profile?.name ?? user.email ?? "U")[0].toUpperCase()}
               </div>
               <span className="flex-1 text-xs text-neutral-400 truncate">
                 {profile?.name || user.email}
               </span>
               <button onClick={logout} title="Logout"
-                className="p-1 text-neutral-500 hover:text-red-400 transition-colors cursor-pointer shrink-0">
+                className="p-1 text-neutral-500 hover:text-yellow-400 hover:bg-neutral-800 rounded transition-colors cursor-pointer shrink-0">
                 <HiLogout className="w-4 h-4" />
               </button>
             </div>
           ) : (
             <div className="flex justify-center py-1.5">
-              <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-xs font-bold text-white">
+              <div className="w-7 h-7 rounded-full bg-yellow-600 flex items-center justify-center text-xs font-bold text-white">
                 {(profile?.name ?? user.email ?? "U")[0].toUpperCase()}
               </div>
             </div>
@@ -108,7 +104,7 @@ export default function Layout() {
             <button key={l} onClick={() => setLanguage(l)}
               className={`flex items-center justify-center rounded-lg text-xs font-bold uppercase transition-colors cursor-pointer ${
                 expanded || mobileOpen ? "flex-1 py-2" : "w-10 py-2"
-              } ${lang === l ? "bg-violet-600 text-white" : "text-neutral-500 hover:bg-neutral-800 hover:text-white"}`}>
+              } ${lang === l ? "bg-yellow-600 text-white" : "text-neutral-500 hover:bg-neutral-800 hover:text-white"}`}>
               {l === "en" ? "🇬🇧 EN" : "🇫🇷 FR"}
             </button>
           ))}
@@ -139,7 +135,7 @@ export default function Layout() {
           <span className="text-lg font-bold"><span className="text-yellow-400">Auto</span><span className="text-white">Check</span></span>
           <button onClick={() => setMobile(false)} className="p-1.5 text-neutral-400 hover:text-white cursor-pointer"><HiX className="w-5 h-5" /></button>
         </div>
-        <NavContent onNav={() => setMobile(false)} />
+        {renderNavContent(() => setMobile(false))}
       </aside>
 
       {/* ── Desktop sidebar ─────────────────────────────────────── */}
@@ -156,7 +152,7 @@ export default function Layout() {
             ? <TbLayoutSidebarLeftCollapse className="w-5 h-5 text-neutral-400 shrink-0 group-hover:scale-110 transition-transform" />
             : <HiMenu className="w-5 h-5 text-neutral-400 shrink-0 group-hover:scale-110 transition-transform" />}
         </button>
-        <NavContent onNav={undefined} />
+        {renderNavContent(undefined)}
       </aside>
 
       {/* ── Page content ────────────────────────────────────────── */}

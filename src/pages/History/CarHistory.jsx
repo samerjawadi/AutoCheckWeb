@@ -24,14 +24,14 @@ const tPay = (s, t) => {
 const fmt = (n) => Number(n || 0).toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 
 const STATUS_STYLE = {
-  Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
   "In Progress": "bg-blue-500/10 text-blue-400 border border-blue-500/30",
   Done:          "bg-green-500/10 text-green-400 border border-green-500/30",
 };
 
 const PAY_STYLE = {
   Paid:    "bg-green-500/10 text-green-400 border border-green-500/30",
-  Partial: "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  Partial: "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
   Unpaid:  "bg-red-500/10 text-red-400 border border-red-500/30",
 };
 
@@ -103,7 +103,7 @@ export default function CarHistory() {
             {car?.vin && <span className="font-mono text-xs text-neutral-500">{car.vin}</span>}
             {owner && (
               <button onClick={() => navigate(`/history/customer/${owner.id}`)}
-                className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors cursor-pointer">
+                className="flex items-center gap-1 text-xs text-yellow-400 hover:text-yellow-400 transition-colors cursor-pointer">
                 <HiUser className="w-3.5 h-3.5" /> {owner.name}
               </button>
             )}
@@ -153,7 +153,6 @@ export default function CarHistory() {
       <div className="flex flex-col gap-3">
         {filtered.map((job) => {
           const total   = calcTotal(job.lines);
-          const paid    = calcPaid(job.payments);
           const balance = calcBalance(job.lines, job.payments);
           const label   = payLabel(job.lines, job.payments);
           const open    = expanded[job.id];

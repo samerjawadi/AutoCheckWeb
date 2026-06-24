@@ -6,7 +6,6 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { db } from "../../services/localDB";
-import LoadingState from "../../components/LoadingState";
 import Skeleton from "../../components/Skeleton";
 import { calcTotal } from "../../utils/finance";
 import { useLanguage } from "../../context/LanguageContext";
@@ -21,7 +20,7 @@ const tStatus = (s, t) => {
 const fmt = (n) => n.toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 
 const STATUS_STYLE = {
-  Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30",
+  Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
   "In Progress": "bg-blue-500/10   text-blue-400   border border-blue-500/30",
   Done:          "bg-green-500/10  text-green-400   border border-green-500/30",
 };
@@ -38,8 +37,6 @@ const monthStart = (() => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 })();
-
-const DATE_PERIODS = ["All", "Today", "This Week", "This Month"];
 
 function filterByPeriod(jobs, period) {
   if (period === "Today")      return jobs.filter((j) => j.dateIn === today);
@@ -146,7 +143,7 @@ export default function Home() {
             <button key={key} onClick={() => setPeriod(key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                 period === key
-                  ? "bg-violet-600 text-white shadow"
+                  ? "bg-yellow-600 text-white shadow"
                   : "text-neutral-400 hover:text-white hover:bg-neutral-800"
               }`}>
               {label}
@@ -157,7 +154,7 @@ export default function Home() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
-        <StatCard icon={HiUsers}         label={t("dashboard_customers")} value={loading ? <Skeleton size="small" /> : customers.length}   color="bg-violet-500/10 text-violet-400" />
+        <StatCard icon={HiUsers}         label={t("dashboard_customers")} value={loading ? <Skeleton size="small" /> : customers.length}   color="bg-yellow-500/10 text-yellow-400" />
         <StatCard icon={TbCar}           label={t("dashboard_cars")}      value={loading ? <Skeleton size="small" /> : cars.length}        color="bg-blue-500/10 text-blue-400" />
         <StatCard icon={TbTool}          label={t("dashboard_jobs")}      value={loading ? <Skeleton size="small" /> : scoped.length}      sub={period === "All" ? (loading ? undefined : t("dashboard_today", { n: todayCount })) : undefined} color="bg-orange-500/10 text-orange-400" />
         <StatCard icon={TbBuildingStore} label={t("dashboard_suppliers")} value={loading ? <Skeleton size="small" /> : suppliers.length}   color="bg-emerald-500/10 text-emerald-400" />
@@ -168,7 +165,7 @@ export default function Home() {
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 mb-8">
         <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest mb-4">{t("dashboard_job_status")}</h2>
         <div className="grid grid-cols-3 gap-4">
-          <div className="flex flex-col items-center justify-center bg-yellow-500/5 border border-yellow-500/20 rounded-xl py-5 gap-1">
+          <div className="flex flex-col items-center justify-center bg-yellow-500/5 border border-yellow-400/20 rounded-xl py-5 gap-1">
             <HiExclamationCircle className="w-6 h-6 text-yellow-400 mb-1" />
             <p className="text-3xl font-bold text-yellow-400">{pending.length}</p>
             <p className="text-xs text-neutral-400">{t("status_pending")}</p>
@@ -201,7 +198,7 @@ export default function Home() {
                 contentStyle={{ background: "#171717", border: "1px solid #404040", borderRadius: 8, color: "#e5e5e5", fontSize: 12 }}
                 formatter={(v) => [v, t("nav_jobs")]}
               />
-              <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="count" fill="#eab308" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -213,7 +210,7 @@ export default function Home() {
           <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest">
             {period === "All" ? t("dashboard_recent") : t("dashboard_jobs_period", { period: DATE_PERIODS.find(d => d.key === period)?.label ?? period })}
           </h2>
-          <Link to="/jobs" className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors">
+          <Link to="/jobs" className="flex items-center gap-1 text-xs text-yellow-400 hover:text-yellow-400 transition-colors">
             {t("view_all")} <HiArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
