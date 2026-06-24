@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { HiPlus, HiPencil, HiTrash, HiEye, HiCash, HiPrinter } from "react-icons/hi";
+import { HiPlus, HiPencil, HiTrash, HiEye, HiCash, HiPrinter, HiCalendar } from "react-icons/hi";
 import { db } from "../../services/localDB";
 import { calcTotal, calcPaid, calcBalance, payLabel } from "../../utils/finance";
 import LoadingState from "../../components/LoadingState";
@@ -10,9 +10,9 @@ import { useLanguage } from "../../context/LanguageContext";
 const STATUS_OPTIONS = ["Pending", "In Progress", "Done"];
 
 const STATUS_STYLE = {
-  Pending:     "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
+  Pending:     "bg-orange-500/10 text-orange-400 border border-orange-400/30",
   "In Progress": "bg-blue-500/10 text-blue-400 border border-blue-500/30",
-  Done:        "bg-green-500/10 text-green-400 border border-green-500/30",
+  Done:        "bg-green-700/20 text-green-500 border border-green-600/40",
 };
 
 const genLineId = () => Math.random().toString(36).slice(2);
@@ -34,17 +34,49 @@ const inputCls =
 const labelCls = "block text-xs font-medium text-neutral-400 mb-1";
 
 const PAY_STYLE = {
-  Paid:    "bg-green-500/10 text-green-400 border border-green-500/30",
+  Paid:    "bg-green-700/20 text-green-500 border border-green-600/40",
   Partial: "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
   Unpaid:  "bg-red-500/10 text-red-400 border border-red-500/30",
+};
+
+const TIMELINE_STATUS = {
+  Pending: {
+    dot: "bg-orange-400",
+    bar: "bg-orange-500/80 border-orange-300/70",
+  },
+  "In Progress": {
+    dot: "bg-blue-400",
+    bar: "bg-blue-500/80 border-blue-400/70",
+  },
+  Done: {
+    dot: "bg-green-600",
+    bar: "bg-green-700/80 border-green-500/70",
+  },
 };
 
 const fmt = (n) =>
   n.toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const parseIsoDate = (value) => {
+  if (!value) return null;
+  const d = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
 export default function Jobs() {
   const { t } = useLanguage();
   const [printJob, setPrintJob] = useState(null); // job to print
+  const [viewMode, setViewMode] = useState("timeline");
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
   const tStatus = (s) => {
     if (s === "Pending")     return t("status_pending");
@@ -59,6 +91,7 @@ export default function Jobs() {
     if (s === "Unpaid")  return t("pay_unpaid");
     return s;
   };
+  const tDayShort = () => t("jobs_timeline_day_short");
   const [jobs, setJobs]           = useState([]);
   const [customers, setCustomers] = useState([]);
   const [cars, setCars]           = useState([]);
@@ -245,14 +278,34 @@ export default function Jobs() {
 
   /* ── filter ── */
   const today = new Date().toISOString().slice(0, 10);
-  const weekStart = (() => {
-    const d = new Date();
+  const todayDate = parseIsoDate(today);
+
+  const getJobRange = (job) => {
+    const start = parseIsoDate(job.dateIn);
+    if (!start) return null;
+    const fallbackEnd = job.status === "Done" ? job.dateIn : today;
+    const end = parseIsoDate(job.dateOut || fallbackEnd || job.dateIn);
+    if (!end) return { start, end: start };
+    return start <= end ? { start, end } : { start: end, end: start };
+  };
+
+  const weekStartDate = (() => {
+    const d = todayDate ? new Date(todayDate) : new Date();
     d.setDate(d.getDate() - d.getDay());
-    return d.toISOString().slice(0, 10);
+    d.setHours(0, 0, 0, 0);
+    return d;
   })();
+
+  const inRange = (range, start, end) => {
+    if (!range || !start || !end) return false;
+    return range.start <= end && range.end >= start;
+  };
 
   const filtered = jobs.filter((j) => {
     const q = search.toLowerCase();
+    const range = getJobRange(j);
+    const customFrom = parseIsoDate(dateFrom);
+    const customTo = parseIsoDate(dateTo);
     const matchSearch =
       customerName(j.customerId).toLowerCase().includes(q) ||
       carLabel(j.carId).toLowerCase().includes(q) ||
@@ -261,16 +314,84 @@ export default function Jobs() {
     const matchPay    = payFilter === "All"    || payLabel(j.lines, j.payments) === payFilter;
     const matchDate =
       dateFilter === "All"       ? true :
-      dateFilter === "Today"     ? j.dateIn === today :
-      dateFilter === "This Week" ? j.dateIn >= weekStart && j.dateIn <= today :
-      /* Custom range */
-        (!dateFrom || j.dateIn >= dateFrom) && (!dateTo || j.dateIn <= dateTo);
+      dateFilter === "Today"     ? Boolean(range && todayDate && todayDate >= range.start && todayDate <= range.end) :
+      dateFilter === "This Week" ? inRange(range, weekStartDate, todayDate ?? weekStartDate) :
+      /* Custom range (overlap) */
+        (!customFrom && !customTo)
+          ? true
+          : customFrom && customTo
+            ? inRange(range, customFrom, customTo)
+            : customFrom
+              ? Boolean(range && range.end >= customFrom)
+              : Boolean(range && customTo && range.start <= customTo);
     return matchSearch && matchStatus && matchPay && matchDate;
   });
 
+  const monthStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+  const monthEnd = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
+  const monthDays = monthEnd.getDate();
+  const hasTodayInMonth = Boolean(todayDate && todayDate >= monthStart && todayDate <= monthEnd);
+  const todayDayNumber = hasTodayInMonth && todayDate ? todayDate.getDate() : null;
+  const todayLeftPct = hasTodayInMonth && todayDate
+    ? ((todayDate.getDate() - 1) / monthDays) * 100
+    : 0;
+
+  const durationDays = (job) => {
+    const range = getJobRange(job);
+    if (!range) return 0;
+    return Math.floor((range.end.getTime() - range.start.getTime()) / DAY_MS) + 1;
+  };
+
+  const timelineRows = filtered
+    .map((job) => {
+      const range = getJobRange(job);
+      if (!range) return null;
+      if (range.end < monthStart || range.start > monthEnd) return null;
+
+      const clampedStart = range.start < monthStart ? monthStart : range.start;
+      const clampedEnd = range.end > monthEnd ? monthEnd : range.end;
+      const offsetDays = Math.max(0, Math.floor((clampedStart.getTime() - monthStart.getTime()) / DAY_MS));
+      const spanDays = Math.max(1, Math.floor((clampedEnd.getTime() - clampedStart.getTime()) / DAY_MS) + 1);
+
+      return {
+        job,
+        leftPct: (offsetDays / monthDays) * 100,
+        widthPct: (spanDays / monthDays) * 100,
+        duration: durationDays(job),
+        startsBeforeMonth: range.start < monthStart,
+        endsAfterMonth: range.end > monthEnd,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      const aDate = parseIsoDate(a.job.dateIn)?.getTime() ?? 0;
+      const bDate = parseIsoDate(b.job.dateIn)?.getTime() ?? 0;
+      return aDate - bDate;
+    });
+
+  const monthLabel = monthStart.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const shiftMonth = (delta) => {
+    setCalendarMonth((prev) => {
+      const next = new Date(prev.getFullYear(), prev.getMonth() + delta, 1);
+      next.setHours(0, 0, 0, 0);
+      return next;
+    });
+  };
+
+  const jumpToCurrentMonth = () => {
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth(), 1);
+    next.setHours(0, 0, 0, 0);
+    setCalendarMonth(next);
+  };
+
   /* ── form modal content ── */
   const FormModal = (
-    <Modal title={modal === "add" ? t("jobs_new") : t("jobs_edit")} onClose={close}>
+    <Modal title={modal === "add" ? t("jobs_new") : t("jobs_edit")} onClose={close} maxWidthClass="max-w-2xl">
       {customers.length === 0 ? (
           <p className="text-neutral-400 text-sm">{t("jobs_no_customers")}</p>
       ) : (
@@ -500,12 +621,158 @@ export default function Jobs() {
         )}
 
         {/* Active count */}
-        <span className="ml-auto text-xs text-neutral-500">
+        <div className="flex items-center gap-1.5 ml-auto">
+          {[
+            { key: "timeline", label: t("jobs_view_timeline") },
+            { key: "table", label: t("jobs_view_table") },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setViewMode(key)}
+              aria-pressed={viewMode === key}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ring-1 ring-inset ${
+                viewMode === key
+                  ? "bg-blue-600 text-white ring-blue-500/40"
+                  : "bg-neutral-800 text-neutral-400 ring-neutral-700 hover:text-white hover:bg-neutral-700"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <span className="text-xs text-neutral-500">
           {filtered.length} / {jobs.length} {t("jobs_title").toLowerCase()}
         </span>
       </div>
 
-      {/* Table */}
+      {/* Timeline */}
+      {viewMode === "timeline" && (
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-base font-semibold text-neutral-100 flex items-center gap-2">
+              <HiCalendar className="w-4 h-4 text-yellow-400" />
+              {t("jobs_timeline_title")}
+            </h2>
+            <p className="text-xs text-neutral-500 mt-1">{t("jobs_timeline_subtitle")}</p>
+            <div className="flex items-center gap-2 mt-2 text-[11px] text-neutral-500">
+              <span className="inline-flex items-center gap-1"><span className={`w-2 h-2 rounded-full ${TIMELINE_STATUS.Pending.dot}`} /> {t("status_pending")}</span>
+              <span className="inline-flex items-center gap-1"><span className={`w-2 h-2 rounded-full ${TIMELINE_STATUS["In Progress"].dot}`} /> {t("status_in_progress")}</span>
+              <span className="inline-flex items-center gap-1"><span className={`w-2 h-2 rounded-full ${TIMELINE_STATUS.Done.dot}`} /> {t("status_done")}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => shiftMonth(-1)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-neutral-800 text-neutral-300 border border-neutral-700 hover:bg-neutral-700 transition-colors cursor-pointer"
+              aria-label={t("jobs_calendar_prev")}
+            >
+              {t("jobs_calendar_prev")}
+            </button>
+            <div className="text-sm font-semibold text-neutral-100 min-w-[140px] text-center">{monthLabel}</div>
+            <button
+              type="button"
+              onClick={() => shiftMonth(1)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-neutral-800 text-neutral-300 border border-neutral-700 hover:bg-neutral-700 transition-colors cursor-pointer"
+              aria-label={t("jobs_calendar_next")}
+            >
+              {t("jobs_calendar_next")}
+            </button>
+            <button
+              type="button"
+              onClick={jumpToCurrentMonth}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-yellow-600 text-white hover:bg-yellow-500 transition-colors cursor-pointer"
+            >
+              {t("jobs_calendar_today")}
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <div className="min-w-[980px]">
+            <div className="grid grid-cols-[260px_1fr] gap-3 items-center border-b border-neutral-800 pb-2 mb-2">
+              <div className="text-xs font-medium text-neutral-500">{t("jobs_timeline_job")}</div>
+              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${monthDays}, minmax(0, 1fr))` }}>
+                {Array.from({ length: monthDays }, (_, idx) => (
+                  <div key={idx} className="text-[10px] sm:text-[11px] text-center text-white/90 font-semibold tracking-tight">
+                    <span className={`${todayDayNumber === idx + 1 ? "inline-block px-1.5 py-0.5 rounded bg-yellow-500/25 text-yellow-200 ring-1 ring-yellow-400/50" : ""}`}>
+                      {idx + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="py-8">
+                <LoadingState inline label={t("loading")} />
+              </div>
+            ) : timelineRows.length === 0 ? (
+              <p className="text-sm text-neutral-500 py-6">{t("jobs_empty_filter")}</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {timelineRows.map(({ job, leftPct, widthPct, duration, startsBeforeMonth, endsAfterMonth }) => {
+                  const statusCls = TIMELINE_STATUS[job.status]?.bar ?? TIMELINE_STATUS.Pending.bar;
+                  const dateRangeLabel = `${startsBeforeMonth ? "... " : ""}${job.dateIn || "-"} ${job.dateOut ? `-> ${job.dateOut}` : "-> ..."}${endsAfterMonth ? " ..." : ""}`;
+                  const compact = widthPct < 12;
+                  const ultraCompact = widthPct < 7;
+
+                  return (
+                    <div key={job.id} className="grid grid-cols-[260px_1fr] gap-3 items-center">
+                      <div className="min-w-0">
+                        <div className="text-sm text-neutral-200 truncate font-medium">{customerName(job.customerId)}</div>
+                        <div className="text-xs text-neutral-500 truncate">{carLabel(job.carId)}</div>
+                      </div>
+                      <div
+                        className="relative h-10 rounded-lg bg-neutral-800/70 border border-neutral-700 overflow-hidden"
+                        style={{
+                          backgroundImage: `linear-gradient(to right, rgba(163,163,163,0.14) 1px, transparent 1px)`,
+                          backgroundSize: `${100 / monthDays}% 100%`,
+                        }}
+                      >
+                        {hasTodayInMonth && (
+                          <div
+                            className="absolute top-0 bottom-0 bg-yellow-500/15 border-x border-yellow-400/45 pointer-events-none"
+                            style={{ left: `${todayLeftPct}%`, width: `${100 / monthDays}%` }}
+                            aria-hidden="true"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => openEdit(job)}
+                          className={`absolute top-1 bottom-1 rounded-md border px-2 text-left text-white shadow-sm transition-all hover:brightness-110 ${statusCls}`}
+                          style={{ left: `${leftPct}%`, width: `${Math.max(widthPct, 1.6)}%` }}
+                          title={`${customerName(job.customerId)} | ${job.dateIn || "-"} -> ${job.dateOut || "..."} | ${duration}${tDayShort()}`}
+                        >
+                          {ultraCompact ? (
+                            <span className="block truncate text-[10px] font-semibold leading-tight">{duration}{tDayShort()}</span>
+                          ) : compact ? (
+                            <>
+                              <span className="block truncate text-[10px] font-semibold leading-tight">{dateRangeLabel}</span>
+                              <span className="block truncate text-[10px] leading-tight opacity-95">{duration}{tDayShort()}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="block truncate text-[11px] font-semibold leading-tight">{customerName(job.customerId)}</span>
+                              <span className="block truncate text-[10px] leading-tight opacity-95">{dateRangeLabel} | {duration}{tDayShort()}</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      )}
+
+      {viewMode === "table" && (
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -592,6 +859,7 @@ export default function Jobs() {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Add / Edit modal */}
       {(modal === "add" || modal === "edit") && FormModal}

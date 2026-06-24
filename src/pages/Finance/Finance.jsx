@@ -12,7 +12,6 @@ import PinLock, { revokeSession } from "../../components/PinLock";
 import { HiLockClosed, HiKey } from "react-icons/hi";
 
 const fmt = (n) => Number(n || 0).toLocaleString("fr-TN", { style: "currency", currency: "TND" });
-const ACCENT_300 = "var(--accent-300)";
 const ACCENT_400 = "var(--accent-400)";
 const ACCENT_500 = "var(--accent-500)";
 const ACCENT_600 = "var(--accent-600)";

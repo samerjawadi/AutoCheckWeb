@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { HiX } from "react-icons/hi";
 
-export default function Modal({ title, onClose, children }) {
+export default function Modal({ title, onClose, children, maxWidthClass = "max-w-lg" }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
@@ -16,7 +16,7 @@ export default function Modal({ title, onClose, children }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="modal-enter bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className={`modal-enter bg-neutral-900 border border-neutral-800 rounded-2xl w-full ${maxWidthClass} mx-4 shadow-2xl max-h-[90vh] overflow-y-auto`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
           <h2 className="text-lg font-semibold text-neutral-100">{title}</h2>
           <button

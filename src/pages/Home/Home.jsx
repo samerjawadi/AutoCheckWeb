@@ -20,6 +20,14 @@ const tStatus = (s, t) => {
 const fmt = (n) => n.toLocaleString("fr-TN", { style: "currency", currency: "TND" });
 const ACCENT_500 = "var(--accent-500)";
 
+const parseIsoDate = (value) => {
+  if (!value) return null;
+  const d = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
 const STATUS_STYLE = {
   Pending:       "bg-yellow-500/10 text-yellow-400 border border-yellow-400/30",
   "In Progress": "bg-blue-500/10   text-blue-400   border border-blue-500/30",
@@ -28,22 +36,42 @@ const STATUS_STYLE = {
 
 const today = new Date().toISOString().slice(0, 10);
 
-const weekStart = (() => {
-  const d = new Date();
-  d.setDate(d.getDate() - d.getDay());
-  return d.toISOString().slice(0, 10);
-})();
+const getJobRange = (job) => {
+  const start = parseIsoDate(job.dateIn);
+  if (!start) return null;
+  const fallbackEnd = job.status === "Done" ? job.dateIn : today;
+  const end = parseIsoDate(job.dateOut || fallbackEnd || job.dateIn);
+  if (!end) return { start, end: start };
+  return start <= end ? { start, end } : { start: end, end: start };
+};
 
-const monthStart = (() => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-})();
+const overlaps = (range, start, end) => {
+  if (!range || !start || !end) return false;
+  return range.start <= end && range.end >= start;
+};
 
 function filterByPeriod(jobs, period) {
-  if (period === "Today")      return jobs.filter((j) => j.dateIn === today);
-  if (period === "This Week")  return jobs.filter((j) => j.dateIn >= weekStart && j.dateIn <= today);
-  if (period === "This Month") return jobs.filter((j) => j.dateIn >= monthStart && j.dateIn <= today);
-  return jobs;
+  if (period === "All") return jobs;
+
+  const end = parseIsoDate(today);
+  if (!end) return jobs;
+
+  const start = (() => {
+    if (period === "Today") return new Date(end);
+    if (period === "This Week") {
+      const d = new Date(end);
+      d.setDate(d.getDate() - d.getDay());
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    if (period === "This Month") {
+      return new Date(end.getFullYear(), end.getMonth(), 1);
+    }
+    return null;
+  })();
+
+  if (!start) return jobs;
+  return jobs.filter((j) => overlaps(getJobRange(j), start, end));
 }
 
 function StatCard({ icon: Icon, label, value, sub, color }) {
