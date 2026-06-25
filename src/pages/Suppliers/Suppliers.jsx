@@ -24,6 +24,8 @@ const inputCls =
   "w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-sm";
 const labelCls = "block text-xs font-medium text-neutral-400 mb-1";
 
+let _cache = null;
+
 export default function Suppliers() {
   const { t } = useLanguage();
   const SUPPLIER_TYPES_KEYS = [
@@ -32,30 +34,34 @@ export default function Suppliers() {
     { key: "Body Shop",      label: () => t("suppliers_body") },
     { key: "Other",          label: () => t("suppliers_other") },
   ];
-  const [suppliers, setSuppliers] = useState([]);
+  const [suppliers, setSuppliers] = useState(() => _cache?.suppliers ?? []);
   const [search, setSearch]       = useState("");
   const [modal, setModal]         = useState(null);
-  const [loading, setLoading]     = useState(true);
+  const [loading, setLoading]     = useState(!_cache);
   const [form, setForm]           = useState(EMPTY);
   const [editId, setEditId]       = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const reload = async () => {
-    setLoading(true);
+  const reload = async (showLoading) => {
+    if (showLoading) setLoading(true);
     const start = Date.now();
     try {
-      setSuppliers(await db.suppliers.getAll());
+      const fresh = await db.suppliers.getAll();
+      setSuppliers(fresh);
+      _cache = { suppliers: fresh };
     } finally {
-      const delta = Date.now() - start;
-      const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
-      const wait = Math.max(0, minMs - delta);
-      setTimeout(() => setLoading(false), wait);
+      if (showLoading) {
+        const delta = Date.now() - start;
+        const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
+        const wait = Math.max(0, minMs - delta);
+        setTimeout(() => setLoading(false), wait);
+      }
     }
   };
   useEffect(() => {
-    const id = setTimeout(() => { reload(); }, 0);
+    const id = setTimeout(() => { reload(!_cache); }, 0);
     return () => clearTimeout(id);
   }, []);
 
@@ -82,10 +88,18 @@ export default function Suppliers() {
     try {
       if (modal === "add") {
         const created = await db.suppliers.add(payload);
-        setSuppliers((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+        setSuppliers((prev) => {
+          const next = [...prev, created].sort((a, b) => a.name.localeCompare(b.name));
+          _cache = { ..._cache, suppliers: next };
+          return next;
+        });
       } else {
         await db.suppliers.update(editId, payload);
-        setSuppliers((prev) => prev.map((s) => (s.id === editId ? { ...s, ...payload } : s)));
+        setSuppliers((prev) => {
+          const next = prev.map((s) => (s.id === editId ? { ...s, ...payload } : s));
+          _cache = { ..._cache, suppliers: next };
+          return next;
+        });
       }
       close();
     } finally {
@@ -98,7 +112,11 @@ export default function Suppliers() {
     setDeleting(true);
     try {
       await db.suppliers.delete(deleteTarget.id);
-      setSuppliers((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      setSuppliers((prev) => {
+        const next = prev.filter((s) => s.id !== deleteTarget.id);
+        _cache = { ..._cache, suppliers: next };
+        return next;
+      });
       close();
     } finally {
       setDeleting(false);

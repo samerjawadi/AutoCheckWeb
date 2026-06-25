@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { HiX } from "react-icons/hi";
 
-export default function Modal({ title, onClose, children, maxWidthClass = "max-w-lg" }) {
+export default function Modal({ title, onClose, children, maxWidthClass = "max-w-lg", footer }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
@@ -16,8 +16,8 @@ export default function Modal({ title, onClose, children, maxWidthClass = "max-w
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`modal-enter bg-neutral-900 border border-neutral-800 rounded-2xl w-full ${maxWidthClass} shadow-2xl max-h-[92vh] overflow-y-auto mt-12 md:mt-0`}>
-        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-neutral-800">
+      <div className={`modal-enter bg-neutral-900 border border-neutral-800 rounded-2xl w-full ${maxWidthClass} shadow-2xl flex flex-col max-h-[92dvh] mt-12 md:mt-0`}>
+        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-neutral-800 shrink-0">
           <h2 className="text-lg font-semibold text-neutral-100">{title}</h2>
           <button
             onClick={onClose}
@@ -26,7 +26,12 @@ export default function Modal({ title, onClose, children, maxWidthClass = "max-w
             <HiX className="w-5 h-5" />
           </button>
         </div>
-        <div className="px-4 py-4 sm:px-6 sm:py-5">{children}</div>
+        <div className="px-4 py-4 sm:px-6 sm:py-5 overflow-y-auto">{children}</div>
+        {footer && (
+          <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-neutral-800 shrink-0">
+            {footer}
+          </div>
+        )}
       </div>
     </div>,
     document.body

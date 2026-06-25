@@ -18,34 +18,43 @@ const inputCls =
 
 const labelCls = "block text-xs font-medium text-neutral-400 mb-1";
 
+let _cache = null;
+
 export default function Customers() {
   const { t } = useLanguage();
-  const [customers, setCustomers] = useState([]);
-  const [allCars, setAllCars]       = useState([]);
+  const [customers, setCustomers] = useState(() => _cache?.customers ?? []);
+  const [allCars, setAllCars]       = useState(() => _cache?.allCars ?? []);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(null); // null | 'add' | 'edit' | 'delete'
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!_cache);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const reload = async () => {
-    setLoading(true);
+  const reload = async (showLoading) => {
+    if (showLoading) setLoading(true);
     const start = Date.now();
     try {
-      setCustomers(await db.customers.getAll());
-      setAllCars(await db.cars.getAll());
+      const [freshCustomers, freshCars] = await Promise.all([
+        db.customers.getAll(),
+        db.cars.getAll(),
+      ]);
+      setCustomers(freshCustomers);
+      setAllCars(freshCars);
+      _cache = { customers: freshCustomers, allCars: freshCars };
     } finally {
-      const delta = Date.now() - start;
-      const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
-      const wait = Math.max(0, minMs - delta);
-      setTimeout(() => setLoading(false), wait);
+      if (showLoading) {
+        const delta = Date.now() - start;
+        const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
+        const wait = Math.max(0, minMs - delta);
+        setTimeout(() => setLoading(false), wait);
+      }
     }
   };
   useEffect(() => {
-    const id = setTimeout(() => { reload(); }, 0);
+    const id = setTimeout(() => { reload(!_cache); }, 0);
     return () => clearTimeout(id);
   }, []);
 
@@ -91,10 +100,18 @@ export default function Customers() {
     try {
       if (modal === "add") {
         const created = await db.customers.add(payload);
-        setCustomers((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+        setCustomers((prev) => {
+          const next = [...prev, created].sort((a, b) => a.name.localeCompare(b.name));
+          _cache = { ..._cache, customers: next };
+          return next;
+        });
       } else {
         await db.customers.update(editId, payload);
-        setCustomers((prev) => prev.map((c) => (c.id === editId ? { ...c, ...payload } : c)));
+        setCustomers((prev) => {
+          const next = prev.map((c) => (c.id === editId ? { ...c, ...payload } : c));
+          _cache = { ..._cache, customers: next };
+          return next;
+        });
       }
       close();
     } finally {
@@ -107,7 +124,11 @@ export default function Customers() {
     setDeleting(true);
     try {
       await db.customers.delete(deleteTarget.id);
-      setCustomers((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+      setCustomers((prev) => {
+        const next = prev.filter((c) => c.id !== deleteTarget.id);
+        _cache = { ..._cache, customers: next };
+        return next;
+      });
       close();
     } finally {
       setDeleting(false);

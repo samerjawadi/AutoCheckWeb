@@ -23,6 +23,7 @@ const EMPTY_JOB = {
   dateIn: new Date().toISOString().slice(0, 10),
   dateOut: "",
   status: "Pending",
+  advancePayment: "",
   notes: "",
   lines: [],
 };
@@ -67,6 +68,8 @@ const parseIsoDate = (value) => {
   return d;
 };
 
+let _cache = null;
+
 export default function Jobs() {
   const { t } = useLanguage();
   const [printJob, setPrintJob] = useState(null); // job to print
@@ -92,11 +95,11 @@ export default function Jobs() {
     return s;
   };
   const tDayShort = () => t("jobs_timeline_day_short");
-  const [jobs, setJobs]           = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [cars, setCars]           = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading]     = useState(true);
+  const [jobs, setJobs]           = useState(() => _cache?.jobs ?? []);
+  const [customers, setCustomers] = useState(() => _cache?.customers ?? []);
+  const [cars, setCars]           = useState(() => _cache?.cars ?? []);
+  const [suppliers, setSuppliers] = useState(() => _cache?.suppliers ?? []);
+  const [loading, setLoading]     = useState(!_cache);
   const [search, setSearch]         = useState("");
   const [statusFilter, setStatus]   = useState("All");
   const [payFilter, setPay]         = useState("All");
@@ -115,23 +118,32 @@ export default function Jobs() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const reload = async () => {
-    setLoading(true);
+  const reload = async (showLoading) => {
+    if (showLoading) setLoading(true);
     const start = Date.now();
     try {
-      setJobs(await db.jobs.getAll());
-      setCustomers(await db.customers.getAll());
-      setCars(await db.cars.getAll());
-      setSuppliers(await db.suppliers.getAll());
+      const [freshJobs, freshCustomers, freshCars, freshSuppliers] = await Promise.all([
+        db.jobs.getAll(),
+        db.customers.getAll(),
+        db.cars.getAll(),
+        db.suppliers.getAll(),
+      ]);
+      setJobs(freshJobs);
+      setCustomers(freshCustomers);
+      setCars(freshCars);
+      setSuppliers(freshSuppliers);
+      _cache = { jobs: freshJobs, customers: freshCustomers, cars: freshCars, suppliers: freshSuppliers };
     } finally {
-      const delta = Date.now() - start;
-      const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
-      const wait = Math.max(0, minMs - delta);
-      setTimeout(() => setLoading(false), wait);
+      if (showLoading) {
+        const delta = Date.now() - start;
+        const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
+        const wait = Math.max(0, minMs - delta);
+        setTimeout(() => setLoading(false), wait);
+      }
     }
   };
   useEffect(() => {
-    const id = setTimeout(() => { reload(); }, 0);
+    const id = setTimeout(() => { reload(!_cache); }, 0);
     return () => clearTimeout(id);
   }, []);
 
@@ -156,6 +168,7 @@ export default function Jobs() {
       dateIn:     job.dateIn  ?? "",
       dateOut:    job.dateOut ?? "",
       status:     job.status  ?? "Pending",
+      advancePayment: "",
       notes:      job.notes   ?? "",
       lines:      job.lines   ?? [],
     });
@@ -249,14 +262,39 @@ export default function Jobs() {
       return;
     }
     setSaving(true);
-    const payload = { ...form, lines: form.lines.filter((l) => l.description.trim()) };
+    const { advancePayment, ...baseForm } = form;
+    const normalizedLines = form.lines
+      .map((l) => ({
+        ...l,
+        description: (l.description ?? "").trim(),
+      }))
+      .filter((l) => l.description || (parseFloat(l.price) || 0) > 0 || l.supplierId);
+    const payload = { ...baseForm, lines: normalizedLines };
+    const initialAdvance = parseFloat(advancePayment);
+    if (modal === "add" && !Number.isNaN(initialAdvance) && initialAdvance > 0) {
+      payload.payments = [{
+        id: genLineId(),
+        date: form.dateIn || new Date().toISOString().slice(0, 10),
+        amount: advancePayment,
+        note: "Advance",
+      }];
+    }
     try {
       if (modal === "add") {
         const created = await db.jobs.add(payload);
-        setJobs((prev) => [created, ...prev]);
+        setJobs((prev) => {
+          const next = [created, ...prev];
+          _cache = { ..._cache, jobs: next };
+          return next;
+        });
       } else {
         await db.jobs.update(editId, payload);
-        setJobs((prev) => prev.map((job) => (job.id === editId ? { ...job, ...payload } : job)));
+        const updated = await db.jobs.getById(editId);
+        setJobs((prev) => {
+          const next = prev.map((job) => (job.id === editId ? (updated ?? { ...job, ...payload }) : job));
+          _cache = { ..._cache, jobs: next };
+          return next;
+        });
       }
       close();
     } finally {
@@ -269,7 +307,11 @@ export default function Jobs() {
     setDeleting(true);
     try {
       await db.jobs.delete(deleteTarget.id);
-      setJobs((prev) => prev.filter((job) => job.id !== deleteTarget.id));
+      setJobs((prev) => {
+        const next = prev.filter((job) => job.id !== deleteTarget.id);
+        _cache = { ..._cache, jobs: next };
+        return next;
+      });
       close();
     } finally {
       setDeleting(false);
@@ -391,11 +433,26 @@ export default function Jobs() {
 
   /* ── form modal content ── */
   const FormModal = (
-    <Modal title={modal === "add" ? t("jobs_new") : t("jobs_edit")} onClose={close} maxWidthClass="max-w-2xl">
+    <Modal title={modal === "add" ? t("jobs_new") : t("jobs_edit")} onClose={close} maxWidthClass="max-w-2xl"
+      footer={
+        <div className="flex justify-end gap-3">
+          <button type="button" onClick={close}
+            disabled={saving}
+            className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
+            {t("cancel")}
+          </button>
+          <button type="submit" form="job-form"
+            disabled={saving}
+            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded-lg transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
+            {saving && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
+            {modal === "add" ? t("jobs_new") : t("save")}
+          </button>
+        </div>
+      }>
       {customers.length === 0 ? (
           <p className="text-neutral-400 text-sm">{t("jobs_no_customers")}</p>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form id="job-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Customer + Car */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -441,6 +498,24 @@ export default function Jobs() {
                 onChange={handleField} className={inputCls}>
                 {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{tStatus(s)}</option>)}
               </select>
+            </div>
+          </div>
+
+          {/* Advance payment */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className={labelCls} htmlFor="advancePayment">{t("pay_amount")}</label>
+              <input
+                id="advancePayment"
+                name="advancePayment"
+                type="number"
+                min="0"
+                step="0.001"
+                value={form.advancePayment}
+                onChange={handleField}
+                className={inputCls}
+                placeholder="0.000"
+              />
             </div>
           </div>
 
@@ -524,20 +599,6 @@ export default function Jobs() {
               value={form.notes} onChange={handleField}
               className={`${inputCls} resize-none`}
               placeholder={t("notes")} />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-1">
-            <button type="button" onClick={close}
-              disabled={saving}
-              className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
-              {t("cancel")}
-            </button>
-            <button type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded-lg transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
-              {saving && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
-              {modal === "add" ? t("jobs_new") : t("save")}
-            </button>
           </div>
         </form>
       )}
@@ -1058,8 +1119,27 @@ export default function Jobs() {
       )}
 
       {/* Record Payment modal */}
-      {payModal && (
+      {payModal && (() => {
+        const payJob = jobs.find((j) => j.id === payJobId);
+        const payTotal = payJob ? calcTotal(payJob.lines) : 0;
+        const payPaid = payJob ? calcPaid(payJob.payments) : 0;
+        const payBalance = payTotal - payPaid;
+        return (
         <Modal title={payEditId ? t("jobs_edit_payment") : t("record_payment")} onClose={() => setPayModal(false)}>
+          <div className="grid grid-cols-3 gap-2 mb-4 p-3 bg-neutral-800/50 rounded-lg text-xs">
+            <div className="text-center">
+              <p className="text-neutral-500">{t("total")}</p>
+              <p className="font-mono text-neutral-100 font-semibold">{fmt(payTotal)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-neutral-500">{t("jobs_paid")}</p>
+              <p className="font-mono text-green-400 font-semibold">{fmt(payPaid)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-neutral-500">{t("jobs_balance")}</p>
+              <p className={`font-mono font-semibold ${payBalance > 0 ? "text-orange-400" : "text-green-400"}`}>{fmt(Math.max(0, payBalance))}</p>
+            </div>
+          </div>
           <form onSubmit={handlePaySubmit} className="flex flex-col gap-4">
             <div>
               <label className={labelCls} htmlFor="payDate">{t("date")} *</label>
@@ -1091,7 +1171,8 @@ export default function Jobs() {
             </div>
           </form>
         </Modal>
-      )}
+        );
+      })()}
 
       {/* Delete modal */}
       {modal === "delete" && deleteTarget && (

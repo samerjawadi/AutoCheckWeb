@@ -15,34 +15,43 @@ const inputCls =
 
 const labelCls = "block text-xs font-medium text-neutral-400 mb-1";
 
+let _cache = null;
+
 export default function Cars() {
   const { t } = useLanguage();
-  const [cars, setCars] = useState([]);
-  const [customers, setCustomers] = useState([]);
+  const [cars, setCars] = useState(() => _cache?.cars ?? []);
+  const [customers, setCustomers] = useState(() => _cache?.customers ?? []);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!_cache);
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const reload = async () => {
-    setLoading(true);
+  const reload = async (showLoading) => {
+    if (showLoading) setLoading(true);
     const start = Date.now();
     try {
-      setCars(await db.cars.getAll());
-      setCustomers(await db.customers.getAll());
+      const [freshCars, freshCustomers] = await Promise.all([
+        db.cars.getAll(),
+        db.customers.getAll(),
+      ]);
+      setCars(freshCars);
+      setCustomers(freshCustomers);
+      _cache = { cars: freshCars, customers: freshCustomers };
     } finally {
-      const delta = Date.now() - start;
-      const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
-      const wait = Math.max(0, minMs - delta);
-      setTimeout(() => setLoading(false), wait);
+      if (showLoading) {
+        const delta = Date.now() - start;
+        const minMs = import.meta.env.MODE === "test" ? 0 : 1000;
+        const wait = Math.max(0, minMs - delta);
+        setTimeout(() => setLoading(false), wait);
+      }
     }
   };
   useEffect(() => {
-    const id = setTimeout(() => { reload(); }, 0);
+    const id = setTimeout(() => { reload(!_cache); }, 0);
     return () => clearTimeout(id);
   }, []);
 
@@ -91,10 +100,18 @@ export default function Cars() {
     try {
       if (modal === "add") {
         const created = await db.cars.add(form);
-        setCars((prev) => [...prev, created].sort((a, b) => a.plate.localeCompare(b.plate)));
+        setCars((prev) => {
+          const next = [...prev, created].sort((a, b) => a.plate.localeCompare(b.plate));
+          _cache = { ..._cache, cars: next };
+          return next;
+        });
       } else {
         await db.cars.update(editId, form);
-        setCars((prev) => prev.map((car) => (car.id === editId ? { ...car, ...form } : car)));
+        setCars((prev) => {
+          const next = prev.map((car) => (car.id === editId ? { ...car, ...form } : car));
+          _cache = { ..._cache, cars: next };
+          return next;
+        });
       }
       close();
     } finally {
@@ -107,7 +124,11 @@ export default function Cars() {
     setDeleting(true);
     try {
       await db.cars.delete(deleteTarget.id);
-      setCars((prev) => prev.filter((car) => car.id !== deleteTarget.id));
+      setCars((prev) => {
+        const next = prev.filter((car) => car.id !== deleteTarget.id);
+        _cache = { ..._cache, cars: next };
+        return next;
+      });
       close();
     } finally {
       setDeleting(false);
