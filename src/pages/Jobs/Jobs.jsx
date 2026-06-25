@@ -60,6 +60,8 @@ const fmt = (n) =>
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+const isAdvancePayment = (payment) => /advance|avance/i.test((payment?.note ?? "").trim());
+
 const parseIsoDate = (value) => {
   if (!value) return null;
   const d = new Date(`${value}T00:00:00`);
@@ -162,13 +164,14 @@ export default function Jobs() {
   const openEdit = (job) => {
     const custExists = customers.some((c) => c.id === job.customerId);
     const carExists  = cars.some((c) => c.id === job.carId);
+    const advance = (job.payments ?? []).find(isAdvancePayment);
     setForm({
       customerId: custExists ? job.customerId : "",
       carId:      carExists  ? job.carId      : "",
       dateIn:     job.dateIn  ?? "",
       dateOut:    job.dateOut ?? "",
       status:     job.status  ?? "Pending",
-      advancePayment: "",
+      advancePayment: advance?.amount ?? "",
       notes:      job.notes   ?? "",
       lines:      job.lines   ?? [],
     });
@@ -270,12 +273,14 @@ export default function Jobs() {
       }))
       .filter((l) => l.description || (parseFloat(l.price) || 0) > 0 || l.supplierId);
     const payload = { ...baseForm, lines: normalizedLines };
-    const initialAdvance = parseFloat(advancePayment);
-    if (modal === "add" && !Number.isNaN(initialAdvance) && initialAdvance > 0) {
+    const normalizedAdvance = String(advancePayment ?? "").trim();
+    const initialAdvance = parseFloat(normalizedAdvance);
+    const hasAdvanceValue = !Number.isNaN(initialAdvance) && initialAdvance > 0;
+    if (modal === "add" && hasAdvanceValue) {
       payload.payments = [{
         id: genLineId(),
         date: form.dateIn || new Date().toISOString().slice(0, 10),
-        amount: advancePayment,
+        amount: normalizedAdvance,
         note: "Advance",
       }];
     }
@@ -288,6 +293,35 @@ export default function Jobs() {
           return next;
         });
       } else {
+        const current = await db.jobs.getById(editId);
+        const existingPayments = current?.payments ?? [];
+        const advanceIdx = existingPayments.findIndex(isAdvancePayment);
+        if (hasAdvanceValue) {
+          if (advanceIdx >= 0) {
+            payload.payments = existingPayments.map((p, idx) =>
+              idx === advanceIdx
+                ? {
+                    ...p,
+                    amount: normalizedAdvance,
+                    date: p.date || form.dateIn || new Date().toISOString().slice(0, 10),
+                    note: p.note || "Advance",
+                  }
+                : p
+            );
+          } else {
+            payload.payments = [
+              ...existingPayments,
+              {
+                id: genLineId(),
+                date: form.dateIn || new Date().toISOString().slice(0, 10),
+                amount: normalizedAdvance,
+                note: "Advance",
+              },
+            ];
+          }
+        } else if (advanceIdx >= 0) {
+          payload.payments = existingPayments.filter((_, idx) => idx !== advanceIdx);
+        }
         await db.jobs.update(editId, payload);
         const updated = await db.jobs.getById(editId);
         setJobs((prev) => {
