@@ -41,32 +41,37 @@ export default function HistoryFilters({ t, tStatus, tPay, statusFilter, setStat
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-3 mb-4">
+    <div className="flex flex-col gap-3 mb-4">
       {/* Search */}
       {setSearch && (
         <input type="text" placeholder={searchPlaceholder ?? t("jobs_search")}
           value={search} onChange={(e) => setSearch(e.target.value)}
-          className={`${inputCls} max-w-xs text-sm`} />
+          className={`${inputCls} w-full sm:max-w-xs text-sm`} />
       )}
 
       {/* Status pills */}
-      <div className="flex items-center gap-1.5">
+      <div className="overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="flex items-center gap-1.5 min-w-max">
         <button onClick={() => setStatus("All")} className={pillCls(statusFilter === "All")}>{t("period_all")}</button>
         {STATUS_OPTIONS.map((s) => (
           <button key={s} onClick={() => setStatus(s)} className={pillCls(statusFilter === s)}>{tStatus(s, t)}</button>
         ))}
+        </div>
       </div>
 
       {/* Pay pills */}
-      <div className="flex items-center gap-1.5">
+      <div className="overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="flex items-center gap-1.5 min-w-max">
         <button onClick={() => setPay("All")} className={pillCls(payFilter === "All")}>{t("period_all")}</button>
         {PAY_OPTIONS.map((p) => (
           <button key={p} onClick={() => setPay(p)} className={pillCls(payFilter === p)}>{tPay(p, t)}</button>
         ))}
+        </div>
       </div>
 
       {/* Date pills */}
-      <div className="flex items-center gap-1.5">
+      <div className="overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="flex items-center gap-1.5 min-w-max">
         {DATE_PERIODS.map(({ key, label }) => (
           <button key={key}
             onClick={() => { setDate(key); if (key !== "Custom") { setDateFrom(""); setDateTo(""); } }}
@@ -74,11 +79,12 @@ export default function HistoryFilters({ t, tStatus, tPay, statusFilter, setStat
             {label}
           </button>
         ))}
+        </div>
       </div>
 
       {/* Custom date range */}
       {dateFilter === "Custom" && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={inputCls} />
           <span className="text-neutral-600 text-xs">{t("date_from_to")}</span>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={inputCls} />
@@ -86,7 +92,7 @@ export default function HistoryFilters({ t, tStatus, tPay, statusFilter, setStat
       )}
 
       {/* Count */}
-      <span className="ml-auto text-xs text-neutral-500">{filtered} / {total}</span>
+      <span className="text-xs text-neutral-500 sm:text-right">{filtered} / {total}</span>
     </div>
   );
 }

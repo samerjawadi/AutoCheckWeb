@@ -167,7 +167,8 @@ export default function Home() {
             {new Date().toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 rounded-xl p-1">
+        <div className="w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 rounded-xl p-1 min-w-max">
           {DATE_PERIODS.map(({ key, label }) => (
             <button key={key} onClick={() => setPeriod(key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
@@ -178,6 +179,7 @@ export default function Home() {
               {label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 
@@ -234,7 +236,37 @@ export default function Home() {
       )}
 
       {/* Recent jobs */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+      <div className="md:hidden flex flex-col gap-3 mb-4">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={`recent-ph-${i}`} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+              <Skeleton size="block" height={64} />
+            </div>
+          ))
+        ) : recent.length === 0 ? (
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-8 text-center text-neutral-600 text-sm">
+            {t("dashboard_no_jobs")}
+          </div>
+        ) : recent.map((job) => (
+          <div key={job.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-neutral-100 font-medium text-sm leading-tight">{job.customerName}</p>
+                <p className="text-neutral-400 text-xs mt-1">{job.carLabel}</p>
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[job.status] ?? ""}`}>
+                {tStatus(job.status, t)}
+              </span>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-xs">
+              <span className="text-neutral-400">{job.dateIn || "-"}</span>
+              <span className="font-mono text-neutral-200">{fmt(calcTotal(job.lines))}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-800">
           <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-widest">
             {period === "All" ? t("dashboard_recent") : t("dashboard_jobs_period", { period: DATE_PERIODS.find(d => d.key === period)?.label ?? period })}

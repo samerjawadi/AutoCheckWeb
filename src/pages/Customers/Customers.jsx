@@ -124,20 +124,68 @@ export default function Customers() {
 
   return (
     <div className="page-enter p-3 md:p-6 w-full">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-neutral-100">{t("customers_title")}</h1>
           <p className="text-sm text-neutral-500 mt-0.5">{customers.length} total</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+        <button onClick={openAdd} className="inline-flex items-center justify-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer w-full sm:w-auto">
           <HiPlus className="w-4 h-4" /> {t("customers_add")}
         </button>
       </div>
 
       <input type="text" placeholder={t("customers_search")} value={search}
-        onChange={(e) => setSearch(e.target.value)} className={`${inputCls} mb-4 max-w-sm`} />
+        onChange={(e) => setSearch(e.target.value)} className={`${inputCls} mb-4 w-full sm:max-w-sm`} />
 
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-x-auto">
+      <div className="md:hidden flex flex-col gap-3 mb-4">
+        {loading ? (
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-8 text-center">
+            <LoadingState inline label={t("loading")} />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-8 text-center text-neutral-500 text-sm">
+            {search ? t("customers_empty_search") : t("customers_empty")}
+          </div>
+        ) : filtered.map((c) => {
+          const carCount = allCars.filter((car) => car.customerId === c.id).length;
+          return (
+            <div key={c.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-neutral-100 font-semibold leading-tight">{c.name}</p>
+                  <p className="text-xs text-neutral-500 mt-1">{t("customers_cars")}: {carCount}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Link to={`/history/customer/${c.id}`}
+                    className="p-2 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors" title="View history">
+                    <TbHistory className="w-4 h-4" />
+                  </Link>
+                  <button onClick={() => openEdit(c)} className="p-2 text-neutral-400 hover:text-yellow-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("edit")}>
+                    <HiPencil className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => openDelete(c)} className="p-2 text-neutral-400 hover:text-red-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("delete")}>
+                    <HiTrash className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {strToPhones(c.phone).filter(Boolean).length === 0 ? (
+                  <span className="text-neutral-500 text-sm">-</span>
+                ) : strToPhones(c.phone).filter(Boolean).map((p, i) => (
+                  <span key={i} className="flex items-center gap-1 text-xs bg-neutral-800 px-2 py-1 rounded-full">
+                    <HiPhone className="w-3 h-3 text-neutral-500" />{p}
+                  </span>
+                ))}
+              </div>
+
+              <p className="text-sm text-neutral-400 break-all">{c.email || "-"}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden md:block bg-neutral-900 border border-neutral-800 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-neutral-800 text-neutral-400 text-left">
@@ -219,7 +267,7 @@ export default function Customers() {
               </div>
               <div className="flex flex-col gap-2">
                 {form.phones.map((p, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
+                  <div key={idx} className="grid grid-cols-[1fr_auto] items-center gap-2">
                     <input
                       value={p}
                       onChange={(e) => setPhone(idx, e.target.value)}

@@ -183,8 +183,9 @@ export default function Finance() {
             </p>
           </div>
           {/* Period filter + lock + change PIN */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 rounded-xl p-1">
+          <div className="w-full lg:w-auto flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="overflow-x-auto pb-1 sm:pb-0">
+              <div className="flex items-center gap-1.5 bg-neutral-900 border border-neutral-800 rounded-xl p-1 min-w-max">
               {PERIODS.map(({ key, label }) => (
                 <button key={key} onClick={() => setPeriod(key)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
@@ -193,19 +194,20 @@ export default function Finance() {
                   {label}
                 </button>
               ))}
+              </div>
             </div>
 
             {/* Change PIN */}
             {changingPin ? (
-              <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-1.5">
+              <div className="flex flex-wrap items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2">
                 <input type="password" inputMode="numeric" maxLength={8} autoFocus
                   placeholder={fr ? "Nouveau code" : "New PIN"}
                   value={newPin} onChange={(e) => setNewPin(e.target.value)}
-                  className="w-24 bg-neutral-800 rounded-lg px-2 py-1 text-xs text-neutral-100 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+                  className="w-[calc(50%-0.25rem)] sm:w-24 bg-neutral-800 rounded-lg px-2 py-1 text-xs text-neutral-100 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-yellow-400" />
                 <input type="password" inputMode="numeric" maxLength={8}
                   placeholder={fr ? "Confirmer" : "Confirm"}
                   value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)}
-                  className="w-24 bg-neutral-800 rounded-lg px-2 py-1 text-xs text-neutral-100 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-yellow-400" />
+                  className="w-[calc(50%-0.25rem)] sm:w-24 bg-neutral-800 rounded-lg px-2 py-1 text-xs text-neutral-100 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-yellow-400" />
                 <button onClick={() => {
                   if (newPin.length < 4) { setPinMsg(fr ? "Min 4 chiffres" : "Min 4 digits"); return; }
                   if (newPin !== confirmPin) { setPinMsg(fr ? "Codes différents" : "PINs don't match"); return; }
@@ -222,7 +224,7 @@ export default function Finance() {
               </div>
             ) : (
               <button onClick={() => setChangingPin(true)}
-                className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl text-xs transition-colors cursor-pointer">
+                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-xl text-xs transition-colors cursor-pointer w-full sm:w-auto">
                 <HiKey className="w-4 h-4" />
                 {pinMsg || (fr ? "Code PIN" : "Change PIN")}
               </button>
@@ -231,7 +233,7 @@ export default function Finance() {
             {/* Lock */}
             <button
               onClick={() => { revokeSession(); navigate("/"); }}
-              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900 border border-neutral-800 hover:border-red-500/50 hover:bg-red-500/5 text-neutral-400 hover:text-red-400 rounded-xl text-xs font-medium transition-colors cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-neutral-900 border border-neutral-800 hover:border-red-500/50 hover:bg-red-500/5 text-neutral-400 hover:text-red-400 rounded-xl text-xs font-medium transition-colors cursor-pointer w-full sm:w-auto"
             >
               <HiLockClosed className="w-4 h-4" />
               {fr ? "Verrouiller" : "Lock"}
@@ -248,7 +250,7 @@ export default function Finance() {
               </div>
 
         {/* Payment status cards */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-5 text-center">
             <p className="text-3xl font-bold text-green-400">{loading ? <Skeleton size="small" /> : paidCount}</p>
             <p className="text-xs text-neutral-400 mt-1">{t("pay_paid")}</p>

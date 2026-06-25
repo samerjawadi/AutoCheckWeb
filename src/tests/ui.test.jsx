@@ -92,9 +92,10 @@ describe("Suppliers page", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/loading/i).length).toBeGreaterThan(0);
 
-    expect(await screen.findByText("AutoCheck")).toBeInTheDocument();
+    const supplierNames = await screen.findAllByText("AutoCheck");
+    expect(supplierNames.length).toBeGreaterThan(0);
     expect(screen.getByPlaceholderText(/search by name or type/i)).toBeInTheDocument();
   });
 });

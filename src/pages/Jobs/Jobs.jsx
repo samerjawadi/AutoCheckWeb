@@ -397,7 +397,7 @@ export default function Jobs() {
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Customer + Car */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={labelCls} htmlFor="customerId">{t("jobs_customer")} *</label>
               <select id="customerId" name="customerId" required value={form.customerId}
@@ -424,7 +424,7 @@ export default function Jobs() {
           </div>
 
           {/* Dates + Status */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelCls} htmlFor="dateIn">{t("jobs_date_in")} *</label>
               <input id="dateIn" name="dateIn" type="date" required
@@ -476,8 +476,8 @@ export default function Jobs() {
                       placeholder={t("jobs_what_done_ph")}
                     />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                    <div className="w-full sm:w-40">
                       <label className={labelCls}>{t("jobs_supplier")}</label>
                       <select
                         value={line.supplierId}
@@ -502,7 +502,7 @@ export default function Jobs() {
                         step="0.001"
                       />
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-left sm:text-right shrink-0">
                       <p className={labelCls}>{t("jobs_line_total")}</p>
                       <p className="text-neutral-100 font-mono font-semibold text-sm">{fmt(parseFloat(line.price) || 0)}</p>
                     </div>
@@ -549,26 +549,27 @@ export default function Jobs() {
   return (
     <div className="page-enter p-3 md:p-6 w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-neutral-100">{t("jobs_title")}</h1>
           <p className="text-sm text-neutral-500 mt-0.5">{jobs.length} total</p>
         </div>
         <button onClick={openAdd}
-          className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+          className="inline-flex items-center justify-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer w-full sm:w-auto">
           <HiPlus className="w-4 h-4" /> {t("jobs_new")}
         </button>
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 overflow-x-auto pb-1 pt-1 pl-1">
+      <div className="flex flex-col gap-2 mb-4">
         {/* Search */}
         <input type="text" placeholder={t("jobs_search")}
           value={search} onChange={(e) => setSearch(e.target.value)}
-          className={`${inputCls} max-w-xs focus:ring-inset`} />
+          className={`${inputCls} w-full sm:max-w-xs focus:ring-inset`} />
 
         {/* Status pills */}
-        <div className="flex items-center gap-1.5">
+        <div className="overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex items-center gap-1.5 min-w-max">
           {[{ key: "All", label: t("period_all") }, ...STATUS_OPTIONS.map(s => ({ key: s, label: tStatus(s) }))].map(({ key, label }) => (
             <button key={key} onClick={() => setStatus(key)} aria-pressed={statusFilter === key}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ring-1 ring-inset ${
@@ -579,10 +580,12 @@ export default function Jobs() {
               {label}
             </button>
           ))}
+          </div>
         </div>
 
         {/* Pay pills */}
-        <div className="flex items-center gap-1.5">
+        <div className="overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex items-center gap-1.5 min-w-max">
           {[{ key: "All", label: t("period_all") }, { key: "Paid", label: t("pay_paid") }, { key: "Partial", label: t("pay_partial") }, { key: "Unpaid", label: t("pay_unpaid") }].map(({ key, label }) => (
             <button key={key} onClick={() => setPay(key)} aria-pressed={payFilter === key}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ring-1 ring-inset ${
@@ -593,10 +596,12 @@ export default function Jobs() {
               {label}
             </button>
           ))}
+          </div>
         </div>
 
         {/* Date pills */}
-        <div className="flex items-center gap-1.5">
+        <div className="overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex items-center gap-1.5 min-w-max">
           {[{ key: "All", label: t("period_all") }, { key: "Today", label: t("period_today") }, { key: "This Week", label: t("period_week") }, { key: "Custom", label: t("period_custom") }].map(({ key, label }) => (
             <button key={key} onClick={() => { setDate(key); if (key !== "Custom") { setDateFrom(""); setDateTo(""); } }} aria-pressed={dateFilter === key}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ring-1 ring-inset ${
@@ -607,11 +612,12 @@ export default function Jobs() {
               {label}
             </button>
           ))}
+          </div>
         </div>
 
         {/* Custom date range */}
         {dateFilter === "Custom" && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
               className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-1.5 text-neutral-100 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer" />
             <span className="text-neutral-600 text-xs">{t("date_from_to")}</span>
@@ -621,7 +627,8 @@ export default function Jobs() {
         )}
 
         {/* Active count */}
-        <div className="flex items-center gap-1.5 ml-auto">
+        <div className="overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex items-center gap-1.5 min-w-max">
           {[
             { key: "timeline", label: t("jobs_view_timeline") },
             { key: "table", label: t("jobs_view_table") },
@@ -640,6 +647,7 @@ export default function Jobs() {
               {label}
             </button>
           ))}
+          </div>
         </div>
 
         <span className="text-xs text-neutral-500">
@@ -650,7 +658,7 @@ export default function Jobs() {
       {/* Timeline */}
       {viewMode === "timeline" && (
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
-        <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 mb-4">
           <div>
             <h2 className="text-base font-semibold text-neutral-100 flex items-center gap-2">
               <HiCalendar className="w-4 h-4 text-yellow-400" />
@@ -663,7 +671,7 @@ export default function Jobs() {
               <span className="inline-flex items-center gap-1"><span className={`w-2 h-2 rounded-full ${TIMELINE_STATUS.Done.dot}`} /> {t("status_done")}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => shiftMonth(-1)}
@@ -773,7 +781,83 @@ export default function Jobs() {
       )}
 
       {viewMode === "table" && (
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-x-auto">
+      <>
+      <div className="md:hidden flex flex-col gap-3 mb-4">
+        {loading ? (
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-8 text-center">
+            <LoadingState inline label={t("loading")} />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-8 text-center text-neutral-500 text-sm">
+            {search || statusFilter !== "All" || dateFilter !== "All" ? t("jobs_empty_filter") : t("jobs_empty")}
+          </div>
+        ) : filtered.map((job) => (
+          <div key={job.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-neutral-100 font-medium text-sm">{customerName(job.customerId)}</p>
+                <p className="text-neutral-400 text-xs mt-1">{carLabel(job.carId)}</p>
+                <p className="text-neutral-500 text-xs mt-1">{job.dateIn || "-"}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[job.status] ?? ""}`}>
+                  {tStatus(job.status)}
+                </span>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PAY_STYLE[payLabel(job.lines, job.payments)]}`}>
+                  {tPay(payLabel(job.lines, job.payments))}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
+              <div>
+                <p className="text-neutral-500">{t("total")}</p>
+                <p className="font-mono text-neutral-200">{fmt(calcTotal(job.lines ?? []))}</p>
+              </div>
+              <div>
+                <p className="text-neutral-500">{t("jobs_paid")}</p>
+                <p className="font-mono text-green-400">{fmt(calcPaid(job.payments))}</p>
+              </div>
+              <div>
+                <p className="text-neutral-500">{t("jobs_balance")}</p>
+                <p className={`font-mono ${calcBalance(job.lines ?? [], job.payments) <= 0 ? "text-green-400" : "text-orange-400"}`}>
+                  {fmt(Math.max(0, calcBalance(job.lines ?? [], job.payments)))}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-1 mt-3 border-t border-neutral-800 pt-3">
+              <button onClick={() => openView(job)}
+                className="p-2 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("view") }>
+                <HiEye className="w-4 h-4" />
+              </button>
+              <button onClick={async () => {
+                  const customer = await db.customers.getById(job.customerId);
+                  const cars = await db.cars.getAll();
+                  const car = cars.find((c) => c.id === job.carId);
+                  setPrintJob({ job, customer, car });
+                }}
+                className="p-2 text-neutral-400 hover:text-yellow-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("jobs_print_sheet")}>
+                <HiPrinter className="w-4 h-4" />
+              </button>
+              <button onClick={() => openPay(job)}
+                className="p-2 text-neutral-400 hover:text-green-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("record_payment") }>
+                <HiCash className="w-4 h-4" />
+              </button>
+              <button onClick={() => openEdit(job)}
+                className="p-2 text-neutral-400 hover:text-yellow-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("edit") }>
+                <HiPencil className="w-4 h-4" />
+              </button>
+              <button onClick={() => openDelete(job)}
+                className="p-2 text-neutral-400 hover:text-red-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("delete") }>
+                <HiTrash className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block bg-neutral-900 border border-neutral-800 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-neutral-800 text-neutral-400 text-left">
@@ -859,6 +943,7 @@ export default function Jobs() {
           </tbody>
         </table>
       </div>
+      </>
       )}
 
       {/* Add / Edit modal */}
@@ -868,7 +953,7 @@ export default function Jobs() {
       {modal === "view" && viewTarget && (
         <Modal title={t("jobs_details")} onClose={close}>
           <div className="flex flex-col gap-4 text-sm">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <p className={labelCls}>{t("jobs_customer")}</p>
                 <p className="text-neutral-100 font-medium">{customerName(viewTarget.customerId)}</p>

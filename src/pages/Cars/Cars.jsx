@@ -127,20 +127,60 @@ export default function Cars() {
 
   return (
     <div className="page-enter p-3 md:p-6 w-full">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-neutral-100">{t("cars_title")}</h1>
           <p className="text-sm text-neutral-500 mt-0.5">{cars.length} total</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+        <button onClick={openAdd} className="inline-flex items-center justify-center gap-2 bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer w-full sm:w-auto">
           <HiPlus className="w-4 h-4" /> {t("cars_add")}
         </button>
       </div>
 
       <input type="text" placeholder={t("cars_search")} value={search}
-        onChange={(e) => setSearch(e.target.value)} className={`${inputCls} mb-4 max-w-sm`} />
+        onChange={(e) => setSearch(e.target.value)} className={`${inputCls} mb-4 w-full sm:max-w-sm`} />
 
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-x-auto">
+      <div className="md:hidden flex flex-col gap-3 mb-4">
+        {loading ? (
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-8 text-center">
+            <LoadingState inline label={t("loading")} />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-8 text-center text-neutral-500 text-sm">
+            {search ? t("cars_empty_search") : t("cars_empty")}
+          </div>
+        ) : filtered.map((car) => (
+          <div key={car.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-neutral-100 font-semibold font-mono leading-tight">{car.plate}</p>
+                <p className="text-xs text-neutral-500 mt-1">{customerName(car.customerId)}</p>
+              </div>
+              <div className="flex items-center gap-1">
+                <Link to={`/history/car/${car.id}`}
+                  className="p-2 text-neutral-400 hover:text-blue-400 hover:bg-neutral-700 rounded transition-colors" title="View history">
+                  <TbHistory className="w-4 h-4" />
+                </Link>
+                <button onClick={() => openEdit(car)} className="p-2 text-neutral-400 hover:text-yellow-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("edit")}>
+                  <HiPencil className="w-4 h-4" />
+                </button>
+                <button onClick={() => openDelete(car)} className="p-2 text-neutral-400 hover:text-red-400 hover:bg-neutral-700 rounded transition-colors cursor-pointer" title={t("delete")}>
+                  <HiTrash className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-neutral-300">
+              <BrandLogo manufacturer={car.manufacturer} size={20} />
+              <span>{car.manufacturer} {car.model || ""}</span>
+            </div>
+
+            <p className="text-xs text-neutral-500 font-mono break-all">{car.vin || "-"}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block bg-neutral-900 border border-neutral-800 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-neutral-800 text-neutral-400 text-left">
@@ -210,7 +250,7 @@ export default function Cars() {
                   {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls} htmlFor="plate">{t("cars_plate")} *</label>
                   <input id="plate" name="plate" required value={form.plate} onChange={handleChange} className={inputCls} placeholder="ABC-1234" />
@@ -220,7 +260,7 @@ export default function Cars() {
                   <input id="vin" name="vin" value={form.vin} onChange={handleChange} className={`${inputCls} font-mono`} placeholder={t("cars_vin_placeholder")} maxLength={17} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>{t("cars_constructor")} *</label>
                   <BrandSelect

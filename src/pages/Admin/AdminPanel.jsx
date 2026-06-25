@@ -196,14 +196,14 @@ export default function AdminPanel() {
       )}
 
       <div className="mb-6 border-b border-neutral-800">
-        <div className="flex gap-3">
+        <div className="flex gap-3 overflow-x-auto pb-1">
           {[
             { id: "db", label: fr ? "Gestion BD" : "Database" },
             { id: "users", label: fr ? "Utilisateurs" : "Users" },
           ].map((tab) => (
             <button key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-t-2xl border border-b-0 ${activeTab === tab.id ? "bg-neutral-900 border-neutral-800 text-white" : "bg-neutral-950 border-neutral-900 text-neutral-500 hover:text-neutral-200"}`}>
+              className={`px-4 py-2 rounded-t-2xl border border-b-0 whitespace-nowrap ${activeTab === tab.id ? "bg-neutral-900 border-neutral-800 text-white" : "bg-neutral-950 border-neutral-900 text-neutral-500 hover:text-neutral-200"}`}>
               {tab.label}
             </button>
           ))}
@@ -218,12 +218,12 @@ export default function AdminPanel() {
             </h2>
             <div className="flex flex-wrap gap-3">
               <button onClick={backupAll} disabled={loading}
-                className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer">
+                className="flex items-center justify-center gap-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer w-full sm:w-auto">
                 <HiDownload className="w-4 h-4" />
                 {fr ? "Exporter toutes les données (JSON)" : "Export all data (JSON)"}
               </button>
               <button disabled
-                className="flex items-center gap-2 bg-neutral-700 text-neutral-400 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-not-allowed">
+                className="flex items-center justify-center gap-2 bg-neutral-700 text-neutral-400 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-not-allowed w-full sm:w-auto">
                 <HiDatabase className="w-4 h-4" />
                 {fr ? "SQL désactivé" : "SQL export disabled"}
               </button>
@@ -293,23 +293,23 @@ export default function AdminPanel() {
             </h2>
             <div className="flex flex-wrap gap-3">
               <button onClick={exportCustomers} disabled={loading}
-                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
+                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50 w-full sm:w-auto justify-center sm:justify-start">
                 <HiUsers className="w-4 h-4 text-yellow-400" /> {t("nav_customers")}
               </button>
               <button onClick={exportCars} disabled={loading}
-                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
+                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50 w-full sm:w-auto justify-center sm:justify-start">
                 <TbCar className="w-4 h-4 text-blue-400" /> {t("nav_cars")}
               </button>
               <button onClick={exportJobs} disabled={loading}
-                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
+                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50 w-full sm:w-auto justify-center sm:justify-start">
                 <TbTool className="w-4 h-4 text-orange-400" /> {t("nav_jobs")}
               </button>
               <button onClick={exportSuppliers} disabled={loading}
-                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
+                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50 w-full sm:w-auto justify-center sm:justify-start">
                 <TbTruckDelivery  className="w-4 h-4 text-green-400" /> {t("nav_suppliers")}
               </button>
               <button onClick={exportUsers} disabled={loading}
-                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50">
+                className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2.5 rounded-xl text-sm transition-colors cursor-pointer disabled:opacity-50 w-full sm:w-auto justify-center sm:justify-start">
                 <HiUser className="w-4 h-4 text-pink-400" /> {t("users")}
               </button>
             </div>
@@ -374,7 +374,7 @@ export default function AdminPanel() {
             <button
               onClick={addUser}
               disabled={loading}
-              className="inline-flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white px-5 py-3 rounded-xl text-sm font-medium transition-colors"
+              className="inline-flex items-center justify-center gap-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white px-5 py-3 rounded-xl text-sm font-medium transition-colors w-full sm:w-auto"
             >
               <HiCheckCircle className="w-4 h-4" />
               {fr ? "Ajouter l'utilisateur" : "Add user"}
@@ -395,12 +395,12 @@ export default function AdminPanel() {
             ) : (
               <div className="flex flex-col gap-2">
                 {users.map((u) => (
-                  <div key={u.id} className="flex items-center justify-between bg-neutral-800 rounded-xl px-4 py-3">
+                  <div key={u.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-neutral-800 rounded-xl px-4 py-3">
                     <div>
                       <p className="text-sm font-medium text-neutral-100">{u.name || u.id.slice(0, 8)}</p>
                       <p className="text-xs text-neutral-500">{u.email || u.id}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                       <select
                         value={u.role}
                         onChange={(e) => changeRole(u.id, e.target.value)}
