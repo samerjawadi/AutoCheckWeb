@@ -2,6 +2,8 @@
   "name": "vite-project",
   "private": true,
   "version": "0.0.0",
+  "description": "AutoCheck desktop app built with Vite, React, and Electron",
+  "author": "AutoCheck",
   "type": "module",
   "main": "main.cjs",
   "scripts": {
@@ -34,7 +36,7 @@
         "nsis",
         "portable"
       ],
-      "icon": "public/AutoCheckLogo.png"
+      "icon": "public/AutoCheckLogo-512.png"
     },
     "nsis": {
       "oneClick": false,
